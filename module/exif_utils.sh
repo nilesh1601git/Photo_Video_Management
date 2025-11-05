@@ -186,3 +186,96 @@ get_best_available_date() {
     return 1
 }
 
+# Function to display all date-related EXIF tags
+# Shows all date/time fields available in the file
+display_all_date_tags() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    # Get all date-related tags using exiftool
+    # This searches for tags containing "Date" or "Time" in their names
+    local temp_output=$(mktemp)
+    exiftool -s -G -time:all -date:all "$file" 2>/dev/null | grep -iE "(date|time)" | grep -v "^$" > "$temp_output" || true
+    
+    if [[ -s "$temp_output" ]]; then
+        print_info "Date-related EXIF tags for '$(basename "$file")':"
+        while IFS= read -r line; do
+            # Format the output nicely - remove leading spaces and show tag name and value
+            local formatted_line=$(echo "$line" | sed 's/^[[:space:]]*//')
+            if [[ -n "$formatted_line" ]]; then
+                echo "  $formatted_line"
+            fi
+        done < "$temp_output"
+    else
+        print_warning "No date-related EXIF tags found for '$(basename "$file")'"
+    fi
+    
+    rm -f "$temp_output"
+}
+
+# Function to get remark/comment from EXIF ImageDescription or UserComment
+# Returns the remark text if found, empty string otherwise
+get_exif_remark() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    # Try ImageDescription first (more commonly displayed)
+    local remark=$(exiftool -s -s -s -ImageDescription "$file" 2>/dev/null)
+    
+    # If ImageDescription is empty, try UserComment
+    if [[ -z "$remark" ]]; then
+        remark=$(exiftool -s -s -s -UserComment "$file" 2>/dev/null)
+    fi
+    
+    echo "$remark"
+}
+
+# Function to set remark/comment in EXIF ImageDescription and UserComment
+# Sets both tags for maximum compatibility
+set_exif_remark() {
+    local file="$1"
+    local remark="$2"
+    local dry_run="${3:-false}"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    if [[ "$dry_run" == true ]]; then
+        print_info "Would set remark for '$file' to: '$remark'"
+        return 0
+    fi
+    
+    # Set both ImageDescription and UserComment for maximum compatibility
+    exiftool -overwrite_original \
+        "-ImageDescription=$remark" \
+        "-UserComment=$remark" \
+        "$file" > /dev/null 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Set remark for '$file'"
+        return 0
+    else
+        print_error "Failed to set remark for '$file'"
+        return 1
+    fi
+}
+
+# Function to display remark/comment if available
+display_exif_remark() {
+    local file="$1"
+    local remark=$(get_exif_remark "$file")
+    
+    if [[ -n "$remark" ]]; then
+        print_info "Remark for '$(basename "$file")': $remark"
+        return 0
+    fi
+    return 1
+}
+

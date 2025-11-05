@@ -10,20 +10,34 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Global flag to track if we're in progress mode (for progress bar clearing)
+IN_PROGRESS_MODE=false
+
+# Function to clear progress bar line if in progress mode
+clear_progress_if_needed() {
+    if [[ "$IN_PROGRESS_MODE" == true ]]; then
+        printf "\r\033[K"
+    fi
+}
+
 # Function to print colored messages
 print_info() {
+    clear_progress_if_needed
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 print_success() {
+    clear_progress_if_needed
     echo -e "${GREEN}✅ $1${NC}"
 }
 
 print_warning() {
+    clear_progress_if_needed
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 print_error() {
+    clear_progress_if_needed
     echo -e "${RED}❌ $1${NC}"
 }
 

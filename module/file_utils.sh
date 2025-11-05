@@ -62,12 +62,42 @@ files_same_checksum() {
     [[ "$md5_1" == "$md5_2" ]]
 }
 
+# Function to find a file with matching checksum in a directory
+# Returns the path to the matching file if found, empty string otherwise
+find_file_with_matching_checksum() {
+    local src_file="$1"
+    local search_dir="$2"
+    
+    if [[ ! -f "$src_file" ]] || [[ ! -d "$search_dir" ]]; then
+        return 1
+    fi
+    
+    local src_checksum=$(calculate_md5 "$src_file")
+    if [[ -z "$src_checksum" ]]; then
+        return 1
+    fi
+    
+    # Search for files with matching checksum in the directory (recursively)
+    while IFS= read -r -d '' file; do
+        if [[ -f "$file" ]]; then
+            local file_checksum=$(calculate_md5 "$file")
+            if [[ "$src_checksum" == "$file_checksum" ]]; then
+                echo "$file"
+                return 0
+            fi
+        fi
+    done < <(find "$search_dir" -type f -print0 2>/dev/null)
+    
+    return 1
+}
+
 # Function to copy file with verification
-# Usage: copy_file_with_verification <src> <dest> [verify]
+# Usage: copy_file_with_verification <src> <dest> [verify] [stage]
 copy_file_with_verification() {
     local src_file="$1"
     local dest_file="$2"
     local verify="${3:-false}"
+    local stage="${4:-}"
     local dry_run="${DRY_RUN:-false}"
     local verbose="${VERBOSE:-true}"
 
@@ -88,27 +118,24 @@ copy_file_with_verification() {
 
     # Check if destination file already exists
     if [[ -e "$dest_file" ]]; then
-        # Compare file sizes
+        # Always check checksums to determine if file is identical
+        # Compare file sizes first (fast check)
         if files_same_size "$src_file" "$dest_file"; then
-            # If verify is enabled, check MD5
-            if [[ "$verify" == true ]]; then
-                if files_same_checksum "$src_file" "$dest_file"; then
-                    if [[ "$verbose" == true ]]; then
-                        print_warning "Skipping '$src_file' - identical file exists (verified)"
-                    fi
-                    log_message "SKIP: Identical file exists (verified): '$dest_file'"
-                    return 0
-                fi
-            else
+            # If sizes match, check checksums to verify files are identical
+            if files_same_checksum "$src_file" "$dest_file"; then
                 if [[ "$verbose" == true ]]; then
-                    print_warning "Skipping '$src_file' - file with same size exists"
+                    if [[ -n "$stage" ]]; then
+                        print_warning "Skipping ${stage} '$src_file' - identical file exists (checksum match)"
+                    else
+                        print_warning "Skipping '$src_file' - identical file exists (checksum match)"
+                    fi
                 fi
-                log_message "SKIP: File with same size exists: '$dest_file'"
+                log_message "SKIP: Identical file exists (checksum match): '$dest_file'"
                 return 0
             fi
         fi
 
-        # File exists but differs - create backup
+        # File exists but differs (size or checksum mismatch) - create backup
         print_warning "File exists but differs: '$dest_file' - creating backup"
         backup_file="${dest_file}.backup.$(date +%s)"
         mv "$dest_file" "$backup_file"
@@ -149,6 +176,8 @@ copy_file_with_verification() {
 
 # Function to find files matching pattern
 find_files() {
+    # Temporarily disable set -e to avoid issues when called from process substitution
+    set +e
     local pattern="$1"
     local source_dir="${2:-.}"
     
@@ -163,18 +192,13 @@ find_files() {
     local original_dir=$(pwd)
     
     cd "$source_dir" || {
-        eval "$old_nullglob"
+        eval "$old_nullglob" || true
         return 1
     }
     
-    for file in $pattern; do
-        if [[ -f "$file" ]] && is_supported_extension "$file"; then
-            files+=("$file")
-        fi
-    done
-    
-    # If no files matched the pattern, try all supported extensions
-    if [[ ${#files[@]} -eq 0 && "$pattern" == "*" ]]; then
+    # If pattern is "*", directly search for all supported extensions
+    # This avoids issues with glob expansion in variable context with nullglob enabled
+    if [[ "$pattern" == "*" ]]; then
         for ext in "${SUPPORTED_EXTENSIONS[@]}"; do
             for file in *."$ext"; do
                 if [[ -f "$file" ]]; then
@@ -182,10 +206,20 @@ find_files() {
                 fi
             done
         done
+    else
+        # For specific patterns, disable nullglob temporarily for proper glob expansion
+        shopt -u nullglob
+        for file in $pattern; do
+            if [[ -f "$file" ]] && is_supported_extension "$file"; then
+                files+=("$file")
+            fi
+        done
+        # Re-enable nullglob for fallback
+        shopt -s nullglob
     fi
     
     cd "$original_dir" || true
-    eval "$old_nullglob"
+    eval "$old_nullglob" || true
     
     # Convert to absolute paths
     for file in "${files[@]}"; do
@@ -195,5 +229,8 @@ find_files() {
             echo "$file"
         fi
     done
+    
+    # Explicit return to ensure success
+    return 0
 }
 
