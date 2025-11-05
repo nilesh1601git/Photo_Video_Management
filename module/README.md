@@ -1,4 +1,4 @@
-# Photo/Video Management Library Modules
+# Photo/Video Management Modules
 
 This directory contains reusable modules for photo and video management operations.
 
@@ -49,11 +49,11 @@ To use these modules in your scripts, source them at the beginning:
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Load all modules
-source "$SCRIPT_DIR/lib/load_modules.sh"
+source "$SCRIPT_DIR/module/load_modules.sh"
 
 # Or load specific modules
-source "$SCRIPT_DIR/lib/common.sh"
-source "$SCRIPT_DIR/lib/file_utils.sh"
+source "$SCRIPT_DIR/module/common.sh"
+source "$SCRIPT_DIR/module/file_utils.sh"
 ```
 
 ## Module Dependencies

@@ -13,7 +13,7 @@ set -e  # Exit on error
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Load all modules
-source "$SCRIPT_DIR/lib/load_modules.sh"
+source "$SCRIPT_DIR/module/load_modules.sh"
 
 # Default values
 DRY_RUN=false
