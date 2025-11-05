@@ -305,16 +305,15 @@ skipped_files=0
 failed_files=0
 verified_files=0
 
-# First, count total files for progress reporting
+# Count total files for progress reporting
 file_count=0
-if [[ "$SHOW_PROGRESS" == true ]]; then
-    print_info "Counting files..."
-    while IFS= read -r file; do
-        [[ -n "$file" ]] && ((file_count++))
-    done < <(find_files "$PATTERN" "$SOURCE_DIR")
-    print_info "Found $file_count files to process"
-    log_message "Found $file_count files to process"
-fi
+print_info "Counting files..."
+while IFS= read -r file; do
+    [[ -n "$file" ]] && ((file_count++))
+done < <(find_files "$PATTERN" "$SOURCE_DIR")
+print_info "Found $file_count files to process"
+log_message "Found $file_count files to process"
+echo ""
 
 # Process files
 current_file=0
@@ -326,10 +325,27 @@ while IFS= read -r file; do
     ((total_files++))
     ((current_file++))
 
-    # Show progress
-    if [[ "$SHOW_PROGRESS" == true && -n "$file_count" && $file_count -gt 0 ]]; then
+    # Show progress bar
+    if [[ $file_count -gt 0 ]]; then
         progress=$((current_file * 100 / file_count))
-        printf "\rProgress: [%-50s] %d%% (%d/%d)" $(printf '#%.0s' $(seq 1 $((progress / 2)))) $progress $current_file $file_count
+        filled=$((progress / 2))
+        empty=$((50 - filled))
+        
+        # Create progress bar string
+        bar=""
+        for ((i=0; i<filled; i++)); do
+            bar="${bar}█"
+        done
+        for ((i=0; i<empty; i++)); do
+            bar="${bar}░"
+        done
+        
+        # Print progress bar with current filename (truncated if too long)
+        filename=$(basename "$file")
+        if [[ ${#filename} -gt 40 ]]; then
+            filename="...${filename: -37}"
+        fi
+        printf "\r\033[KProgress: [%s] %3d%% (%d/%d) - %s" "$bar" $progress $current_file $file_count "$filename"
     fi
 
     # Copy to STAGE1 (flat backup)
@@ -355,8 +371,9 @@ while IFS= read -r file; do
     fi
 done < <(find_files "$PATTERN" "$SOURCE_DIR")
 
-# Clear progress line if shown
-if [[ "$SHOW_PROGRESS" == true ]]; then
+# Clear progress line and show completion
+if [[ $file_count -gt 0 ]]; then
+    printf "\r\033[K"
     echo ""
 fi
 
