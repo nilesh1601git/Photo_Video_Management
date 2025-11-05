@@ -27,6 +27,9 @@ USE_EXIF_DATE=false
 VERIFY_COPY=false
 SHOW_PROGRESS=false
 
+# Associative array to track per-timestamp counters for duplicate filenames in STAGE2
+declare -A stage2_filename_counters
+
 # Function to show usage
 show_usage() {
     cat << EOF
@@ -34,8 +37,9 @@ Usage: $0 [OPTIONS] [PATTERN]
 
 Copy photos/videos to STAGE1 (flat backup) and STAGE2 (organized) directories.
 
-STAGE1: Pristine backup with original filenames (no organization)
-STAGE2: Organized by date with optional EXIF handling and verification
+STAGE1: Pristine backup with original filenames (no organization, no renaming)
+STAGE2: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate,
+        with optional date-based directory organization and verification
 
 OPTIONS:
     --dry-run              Show what would be copied without actually copying
@@ -75,9 +79,11 @@ EXAMPLES:
 
 WORKFLOW:
     1. Files are copied to STAGE1 maintaining original filenames (pristine backup)
-    2. Files are copied to STAGE2 with optional date organization
-    3. Both stages preserve original timestamps
-    4. STAGE1 = backup, STAGE2 = working/organized copy
+    2. Files are copied to STAGE2 and renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate
+    3. STAGE2 files can be organized into YYYY/MM subdirectories (optional)
+    4. Filename mappings (original → new) are logged
+    5. Both stages preserve original timestamps
+    6. STAGE1 = backup, STAGE2 = working/organized copy with standardized names
 
 EOF
 }
@@ -142,11 +148,12 @@ if [[ ! -d "$SOURCE_DIR" ]]; then
     exit 1
 fi
 
-# Check for exiftool if needed
-if [[ "$USE_EXIF_DATE" == true ]]; then
-    if ! check_exiftool; then
-        exit 1
-    fi
+# Check for exiftool (required for STAGE2 renaming based on EXIF CreateDate)
+if ! check_exiftool; then
+    print_error "exiftool is required for STAGE2 file renaming but not found."
+    print_info "Install it with: sudo apt-get install libimage-exiftool-perl (Debian/Ubuntu)"
+    print_info "Or: brew install exiftool (macOS)"
+    exit 1
 fi
 
 # Initialize log file
@@ -172,12 +179,28 @@ copy_to_stage1() {
     copy_file_with_verification "$src_file" "$dest_file" false
 }
 
-# Function to copy file to STAGE2 (with optional organization)
+# Function to copy file to STAGE2 (with optional organization and renaming)
 copy_to_stage2() {
     local src_file="$1"
     local dest_base_dir="$STAGE2_DIR"
     local dest_dir="$dest_base_dir"
     local subdir=""
+    local original_filename=$(basename "$src_file")
+    local new_filename=""
+    local ext="${original_filename##*.}"
+
+    # Try to get new filename from EXIF CreateDate
+    local exif_formatted_date=$(format_exif_date_to_filename "$src_file")
+    if [[ -n "$exif_formatted_date" ]]; then
+        # Format extension to lowercase
+        local ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+        new_filename="${exif_formatted_date}.${ext_lower}"
+    else
+        # Fall back to original filename if EXIF date not available
+        new_filename="$original_filename"
+        print_warning "Could not get EXIF CreateDate for '$src_file', using original filename"
+        log_message "WARNING: Could not get EXIF CreateDate for '$src_file', using original filename"
+    fi
 
     # Determine subdirectory if organizing by date
     if [[ "$ORGANIZE_BY_DATE" == true ]]; then
@@ -205,7 +228,40 @@ copy_to_stage2() {
         fi
     fi
 
-    local dest_file="$dest_dir/$(basename "$src_file")"
+    # Handle duplicate filenames by adding counter suffix
+    local base_name="${new_filename%.*}"
+    local final_filename="$new_filename"
+    local ext="${new_filename##*.}"
+    
+    # Check if file with this name already exists in destination (or would exist in dry run)
+    if [[ -e "$dest_dir/$final_filename" ]] && [[ "$dest_dir/$final_filename" != "$src_file" ]]; then
+        # Initialize counter for this base name if not already done
+        local counter=${stage2_filename_counters[$base_name]:-1}
+        
+        # Loop until a unique name is found
+        while true; do
+            final_filename="${base_name}_$(printf "%03d" $counter).${ext}"
+            if [[ ! -e "$dest_dir/$final_filename" ]] || [[ "$DRY_RUN" == true ]]; then
+                break
+            fi
+            ((counter++))
+        done
+        
+        stage2_filename_counters[$base_name]=$((counter + 1))
+        print_warning "Duplicate filename detected, using: '$final_filename'"
+        log_message "WARNING: Duplicate filename detected, using: '$final_filename'"
+    fi
+    
+    local dest_file="$dest_dir/$final_filename"
+    
+    # Log filename mapping
+    if [[ "$original_filename" != "$final_filename" ]]; then
+        print_info "Filename mapping: '$original_filename' → '$final_filename'"
+        log_message "FILENAME MAPPING: '$original_filename' → '$final_filename'"
+    else
+        log_message "FILENAME MAPPING: '$original_filename' → '$final_filename' (no change)"
+    fi
+    
     copy_file_with_verification "$src_file" "$dest_file" "$VERIFY_COPY"
 }
 
@@ -213,8 +269,8 @@ copy_to_stage2() {
 print_info "Starting photo management process..."
 print_info "Source: $SOURCE_DIR"
 print_info "Pattern: $PATTERN"
-print_info "STAGE1: $STAGE1_DIR (flat backup - no organization)"
-print_info "STAGE2: $STAGE2_DIR (working copy)"
+print_info "STAGE1: $STAGE1_DIR (flat backup - original filenames preserved)"
+print_info "STAGE2: $STAGE2_DIR (renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate)"
 if [[ "$ORGANIZE_BY_DATE" == true ]]; then
     print_info "STAGE2 Organization: By date (YYYY/MM)"
     if [[ "$USE_EXIF_DATE" == true ]]; then
@@ -223,7 +279,7 @@ if [[ "$ORGANIZE_BY_DATE" == true ]]; then
         print_info "Date source: Filename"
     fi
 else
-    print_info "STAGE2 Organization: Flat (same as STAGE1)"
+    print_info "STAGE2 Organization: Flat structure"
 fi
 if [[ "$VERIFY_COPY" == true ]]; then
     print_info "Verification: Enabled for STAGE2 (MD5 checksums)"

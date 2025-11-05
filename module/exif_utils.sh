@@ -68,6 +68,28 @@ get_exif_createdate() {
     exiftool -s -s -s -CreateDate "$file" 2>/dev/null
 }
 
+# Function to format EXIF CreateDate to YYYYMMDD_HHMMSS format
+# Returns: YYYYMMDD_HHMMSS format on success, empty string on failure
+format_exif_date_to_filename() {
+    local file="$1"
+    local created=$(get_exif_createdate "$file")
+    
+    if [[ -z "$created" ]]; then
+        return 1
+    fi
+    
+    # Format date: YYYYMMDD_HHMMSS
+    # Input format is typically: YYYY:MM:DD HH:MM:SS
+    local formatted=$(echo "$created" | sed 's/[: ]//g' | cut -c1-15 | sed 's/\(........\)\(......\)/\1_\2/')
+    
+    if [[ -z "$formatted" ]] || [[ ! $formatted =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
+        return 1
+    fi
+    
+    echo "$formatted"
+    return 0
+}
+
 # Function to modify EXIF timestamps from filename
 # Expects filename format: YYYYMMDD_HHMMSS.ext
 # Usage: modify_exif_timestamp_from_filename <file> [dry_run]
