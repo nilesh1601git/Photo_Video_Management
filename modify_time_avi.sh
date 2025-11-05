@@ -1,38 +1,42 @@
 #!/bin/bash
 
-echo "Fixing EXIF timestamps using filename..."
+# modify_time_avi.sh
+# Modifies EXIF timestamps for AVI files based on filename
+# Usage: modify_time_avi.sh [--dry-run]
 
-for file in  `ls *.AVI`
-do
-    [ -f "$file" ] || continue
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-    echo "Processing: $file"
+# Load modules
+source "$SCRIPT_DIR/lib/load_modules.sh"
 
-    # Extract timestamp from filename (expects format: YYYYMMDD_HHMMSS.jpg)
-    base=$(basename "$file")
-    name="${base%.*}"
+# Default values
+DRY_RUN=false
+PATTERN="*.AVI"
+
+# Parse command line arguments
+if [[ "$1" == "--dry-run" ]]; then
+    DRY_RUN=true
+    shift
+fi
+
+if [[ -n "$1" ]]; then
+    PATTERN="$1"
+fi
+
+# Check for exiftool
+if ! check_exiftool; then
+    exit 1
+fi
+
+print_info "Fixing EXIF timestamps using filename..."
+
+# Process files matching pattern
+for file in $PATTERN; do
+    [[ -f "$file" ]] || continue
     
-    if [[ $name =~ ^([0-9]{8})_([0-9]{6})$ ]]; then
-        date_part=${BASH_REMATCH[1]}
-        time_part=${BASH_REMATCH[2]}
-        
-        # Format as: YYYY:MM:DD HH:MM:SS
-        ts="${date_part:0:4}:${date_part:4:2}:${date_part:6:2} ${time_part:0:2}:${time_part:2:2}:${time_part:4:2}"
-
-        # Update all EXIF and file timestamps
-        exiftool \
-          "-FileModifyDate=$ts" \
-          "$file"
-#        exiftool \
-#          "-DateTimeOriginal=$ts" \
-#          "-CreateDate=$ts" \
-#          "-ModifyDate=$ts" \
-#          "-FileModifyDate=$ts" \
-#          "$file"
-    else
-        echo "⚠️ Skipping $file (filename doesn't match expected format)"
-    fi
+    print_info "Processing: $file"
+    modify_exif_timestamp_from_filename "$file" "$DRY_RUN"
 done
 
-echo "Done!"
-
+print_success "Done!"

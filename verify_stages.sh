@@ -6,56 +6,16 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load modules
+source "$SCRIPT_DIR/lib/load_modules.sh"
+
 # Default values
 STAGE1_DIR="./STAGE1"
 STAGE2_DIR="./STAGE2"
-LOG_FILE=""
 VERBOSE=true
-
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Function to print colored messages
-print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
-}
-
-print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
-}
-
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
-}
-
-# Function to write to log file
-log_message() {
-    local message="$1"
-    if [[ -n "$LOG_FILE" ]]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $message" >> "$LOG_FILE"
-    fi
-}
-
-# Function to calculate MD5 checksum
-calculate_md5() {
-    local file="$1"
-    if command -v md5sum &> /dev/null; then
-        md5sum "$file" | awk '{print $1}'
-    elif command -v md5 &> /dev/null; then
-        md5 -q "$file"
-    else
-        print_error "Neither md5sum nor md5 command found."
-        return 1
-    fi
-}
 
 # Function to show usage
 show_usage() {
@@ -128,11 +88,7 @@ fi
 
 # Initialize log file
 if [[ -n "$LOG_FILE" ]]; then
-    echo "=========================================" > "$LOG_FILE"
-    echo "Stage Verification Log" >> "$LOG_FILE"
-    echo "Started: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
-    echo "=========================================" >> "$LOG_FILE"
-    print_success "Logging to: $LOG_FILE"
+    set_log_file "$LOG_FILE"
 fi
 
 print_info "Starting verification..."
@@ -169,10 +125,9 @@ verify_file() {
     fi
     
     # Compare file sizes
-    stage1_size=$(stat -c%s "$stage1_file" 2>/dev/null || stat -f%z "$stage1_file" 2>/dev/null)
-    stage2_size=$(stat -c%s "$stage2_file" 2>/dev/null || stat -f%z "$stage2_file" 2>/dev/null)
-    
-    if [[ "$stage1_size" != "$stage2_size" ]]; then
+    if ! files_same_size "$stage1_file" "$stage2_file"; then
+        local stage1_size=$(get_file_size "$stage1_file")
+        local stage2_size=$(get_file_size "$stage2_file")
         print_error "Size mismatch: $rel_path (STAGE1: $stage1_size, STAGE2: $stage2_size)"
         log_message "ERROR: Size mismatch: $rel_path"
         ((size_mismatch++))
@@ -180,12 +135,9 @@ verify_file() {
     fi
     
     # Compare checksums
-    stage1_md5=$(calculate_md5 "$stage1_file")
-    stage2_md5=$(calculate_md5 "$stage2_file")
-    
-    if [[ "$stage1_md5" != "$stage2_md5" ]]; then
+    if ! files_same_checksum "$stage1_file" "$stage2_file"; then
         print_error "Checksum mismatch: $rel_path"
-        log_message "ERROR: Checksum mismatch: $rel_path (STAGE1: $stage1_md5, STAGE2: $stage2_md5)"
+        log_message "ERROR: Checksum mismatch: $rel_path"
         ((mismatch_files++))
         return 1
     fi
@@ -250,10 +202,7 @@ log_message "Size mismatches: $size_mismatch"
 log_message "Checksum mismatches: $mismatch_files"
 log_message "========================================="
 
-if [[ -n "$LOG_FILE" ]]; then
-    log_message "Completed: $(date '+%Y-%m-%d %H:%M:%S')"
-    print_success "Log file saved to: $LOG_FILE"
-fi
+close_log_file
 
 # Exit with error if there were any issues
 if [[ $missing_in_stage2 -gt 0 || $size_mismatch -gt 0 || $mismatch_files -gt 0 ]]; then
@@ -263,4 +212,3 @@ else
     print_success "Verification PASSED - all files match!"
     exit 0
 fi
-
