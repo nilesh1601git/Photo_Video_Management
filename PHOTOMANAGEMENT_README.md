@@ -16,15 +16,19 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 
 ✅ **Dual Stage Backup**: Copies files to both STAGE1 (flat) and STAGE2 (organized) directories
 ✅ **STAGE1 - Flat Backup**: Pristine backup with original filenames, no organization
-✅ **STAGE2 - Organized Copy**: Optional date-based organization for easy browsing
+✅ **STAGE2 - Organized Copy**: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
+✅ **STAGE2 Renaming**: Automatic renaming based on EXIF CreateDate with filename fallback
 ✅ **Timestamp Preservation**: Maintains original file modification times in both stages
-✅ **Date-Based Organization**: Organize STAGE2 files into YYYY/MM subdirectories
-✅ **EXIF Metadata Support**: Extract dates from EXIF data for STAGE2 organization (requires exiftool)
+✅ **Date-Based Organization**: Organize STAGE2 files into YYYY/MM subdirectories (optional)
+✅ **EXIF Metadata Support**: Extract dates from EXIF data for STAGE2 organization and renaming (requires exiftool)
 ✅ **File Verification**: MD5 checksum verification of STAGE2 files
-✅ **Progress Reporting**: Visual progress bar for large batches
-✅ **Detailed Logging**: Create comprehensive log files
+✅ **Progress Reporting**: Visual progress bar for large batches with real-time updates
+✅ **Detailed Logging**: Create comprehensive log files with timestamps
 ✅ **Dry Run Mode**: Preview operations without making changes
-✅ **Smart Duplicate Handling**: Skip identical files, backup different ones
+✅ **Smart Duplicate Handling**: Checksum-based duplicate detection - skip identical files, backup different ones
+✅ **Move Mode**: Move files instead of copying (delete source after successful copy to both stages)
+✅ **Remark Management**: Set, get, and display remarks/comments stored in EXIF ImageDescription and UserComment tags
+✅ **Date Tag Display**: Show all date-related EXIF tags before copying to STAGE2
 ✅ **Multiple Format Support**: JPG, JPEG, PNG, AVI, MOV, MP4, M4V
 
 #### Usage
@@ -47,6 +51,10 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 | `--log <file>` | Write detailed log to specified file |
 | `--progress` | Show progress bar during copy operations |
 | `--quiet` | Suppress verbose output |
+| `--set-remark <text>` | Set remark/comment for files (stored in EXIF ImageDescription and UserComment) |
+| `--get-remark` | Display remark/comment for files |
+| `--show-remark` | Show remarks when processing files |
+| `--move` | Move files instead of copying (delete source after successful copy to both stages) |
 | `-h, --help` | Show help message |
 
 #### Examples
@@ -86,19 +94,70 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 ./photomanagement.sh --organize-by-date "20231225_*.jpg"
 ```
 
+**Set remark for all files:**
+```bash
+./photomanagement.sh --set-remark "Family vacation 2024" --source /path/to/photos
+```
+
+**Display remarks for files:**
+```bash
+./photomanagement.sh --get-remark --source /path/to/photos
+./photomanagement.sh --get-remark --source /path/to/photos "*.jpg"
+./photomanagement.sh --get-remark TEST_DATA/*
+```
+
+**Show remarks when processing files:**
+```bash
+./photomanagement.sh --source /path/to/photos --show-remark
+```
+
+**Move files instead of copying:**
+```bash
+./photomanagement.sh --move --source /path/to/photos
+./photomanagement.sh --move --organize-by-date --verify
+```
+
+**Complete workflow example (move with remark and verification):**
+```bash
+./photomanagement.sh \
+  --stage1 TEST_DATA/STAGE1 \
+  --stage2 TEST_DATA/STAGE2 \
+  --source TEST_DATA/ \
+  --progress \
+  --set-remark "Champaign Trip 2017" \
+  --move \
+  --verify
+```
+This example:
+- Uses custom stage directories (TEST_DATA/STAGE1 and TEST_DATA/STAGE2)
+- Shows progress bar during processing
+- Sets a remark for all files ("Champaign Trip 2017")
+- Moves files (deletes source after successful copy)
+- Verifies copied files with MD5 checksums
+
 #### Date Organization
 
-**STAGE1** always maintains a flat structure (no organization):
+**STAGE1** always maintains a flat structure (no organization, original filenames):
 ```
 STAGE1/
+├── IMG_0013.JPG
+├── IMG_0018.JPG
+├── IMG_0049.JPG
+└── video.MOV
+```
+
+**STAGE2** files are renamed to YYYYMMDD_HHMMSS.ext format and can be organized by date when using `--organize-by-date`:
+
+Without `--organize-by-date` (flat structure):
+```
+STAGE2/
 ├── 20231125_143022.jpg
 ├── 20231125_143023.jpg
 ├── 20231225_120000.jpg
-├── 20231225_120001.jpg
-└── 20240101_000000.jpg
+└── 20240101_000000.mp4
 ```
 
-**STAGE2** can be organized by date when using `--organize-by-date`:
+With `--organize-by-date` (organized by date):
 ```
 STAGE2/
 ├── 2023/
@@ -110,13 +169,25 @@ STAGE2/
 │       └── 20231225_120001.jpg
 └── 2024/
     └── 01/
-        └── 20240101_000000.jpg
+        └── 20240101_000000.mp4
 ```
+
+**STAGE2 Renaming:**
+- Files in STAGE2 are automatically renamed to `YYYYMMDD_HHMMSS.ext` format
+- Renaming priority: EXIF CreateDate → DateTimeOriginal → ModifyDate
+- Fallback: If no EXIF date, uses original filename (no renaming)
+- Duplicate filenames get `_001`, `_002`, etc. suffix automatically
 
 **Date Source Priority (for STAGE2 organization):**
 1. If `--use-exif-date` is specified: EXIF DateTimeOriginal → CreateDate → ModifyDate
 2. Fallback: Filename pattern (YYYYMMDD_HHMMSS)
 3. If no date found: Copy to STAGE2 root directory
+
+**Duplicate Detection:**
+- Files are checked by MD5 checksum before copying
+- If an identical file (by checksum) already exists in STAGE1 or STAGE2, the file is skipped
+- Different files with same name are copied with `_001`, `_002` suffix
+- In move mode, source files are only deleted if successfully copied to both stages (not if skipped)
 
 ---
 
@@ -234,6 +305,26 @@ sudo ln -s $(pwd)/verify_stages.sh /usr/local/bin/verify-stages
   --stage2 /backup/STAGE2 \
   --log verify_$(date +%Y%m%d).log
 ```
+
+### Move Workflow with Remarks
+
+```bash
+# Move files with remark, verification, and progress tracking
+./photomanagement.sh \
+  --stage1 TEST_DATA/STAGE1 \
+  --stage2 TEST_DATA/STAGE2 \
+  --source TEST_DATA/ \
+  --progress \
+  --set-remark "Champaign Trip 2017" \
+  --move \
+  --verify
+```
+This workflow:
+- Moves files from source (deletes after successful copy to both stages)
+- Sets a remark ("Champaign Trip 2017") stored in EXIF tags
+- Verifies copied files with MD5 checksums
+- Shows progress bar during processing
+- Uses custom stage directories
 
 ### Incremental Backup
 

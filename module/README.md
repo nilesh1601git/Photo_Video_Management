@@ -18,6 +18,7 @@ File operations utilities:
 - File comparison (`files_same_checksum`)
 - File copying with verification (`copy_file_with_verification`)
 - File finding (`find_files`)
+- Checksum-based duplicate detection (`find_file_with_matching_checksum`)
 
 ### `date_utils.sh`
 Date extraction and parsing utilities:
@@ -34,6 +35,9 @@ EXIF metadata utilities:
 - Date path from EXIF (`get_date_path_from_exif`)
 - EXIF timestamp modification (`modify_exif_timestamp_from_filename`)
 - Best available date (`get_best_available_date`)
+- Date-related EXIF tag display (`display_all_date_tags`)
+- Remark management (`get_exif_remark`, `set_exif_remark`, `display_exif_remark`)
+- Filename formatting from EXIF date (`format_exif_date_to_filename`)
 
 ### `load_modules.sh`
 Convenience script to load all modules at once.
