@@ -14,22 +14,22 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 
 #### Features
 
-✅ **Dual Stage Backup**: Copies files to both STAGE1 (flat) and STAGE2 (organized) directories
-✅ **STAGE1 - Flat Backup**: Pristine backup with original filenames, no organization
-✅ **STAGE2 - Organized Copy**: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
-✅ **STAGE2 Renaming**: Automatic renaming based on EXIF CreateDate with filename fallback
-✅ **Timestamp Preservation**: Maintains original file modification times in both stages
-✅ **Date-Based Organization**: Organize STAGE2 files into YYYY/MM subdirectories (optional)
-✅ **EXIF Metadata Support**: Extract dates from EXIF data for STAGE2 organization and renaming (requires exiftool)
-✅ **File Verification**: MD5 checksum verification of STAGE2 files
-✅ **Progress Reporting**: Visual progress bar for large batches with real-time updates
-✅ **Detailed Logging**: Create comprehensive log files with timestamps
-✅ **Dry Run Mode**: Preview operations without making changes
-✅ **Smart Duplicate Handling**: Checksum-based duplicate detection - skip identical files, backup different ones
-✅ **Move Mode**: Move files instead of copying (delete source after successful copy to both stages)
-✅ **Remark Management**: Set, get, and display remarks/comments stored in EXIF ImageDescription and UserComment tags
-✅ **Date Tag Display**: Show all date-related EXIF tags before copying to STAGE2
-✅ **Multiple Format Support**: JPG, JPEG, PNG, AVI, MOV, MP4, M4V
+✅ **Dual Stage Backup**: Copies files to both STAGE1 (flat) and STAGE2 (organized) directories   
+✅ **STAGE1 - Flat Backup**: Pristine backup with original filenames, no organization   
+✅ **STAGE2 - Organized Copy**: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate   
+✅ **STAGE2 Renaming**: Automatic renaming based on EXIF CreateDate with filename fallback   
+✅ **Timestamp Preservation**: Maintains original file modification times in both stages   
+✅ **Date-Based Organization**: Organize STAGE2 files into YYYY/MM subdirectories (optional)   
+✅ **EXIF Metadata Support**: Extract dates from EXIF data for STAGE2 organization and renaming (requires exiftool)   
+✅ **File Verification**: MD5 checksum verification of STAGE2 files   
+✅ **Progress Reporting**: Visual progress bar for large batches with real-time updates   
+✅ **Detailed Logging**: Create comprehensive log files with timestamps   
+✅ **Dry Run Mode**: Preview operations without making changes   
+✅ **Smart Duplicate Handling**: Checksum-based duplicate detection - skip identical files, backup different ones   
+✅ **Move Mode**: Move files instead of copying (delete source after successful copy to both stages)   
+✅ **Remark Management**: Set, get, and display remarks/comments stored in EXIF ImageDescription and UserComment tags   
+✅ **Date Tag Display**: Show all date-related EXIF tags before copying to STAGE2   
+✅ **Multiple Format Support**: JPG, JPEG, PNG, AVI, MOV, MP4, M4V   
 
 #### Usage
 
@@ -429,8 +429,4 @@ Log files contain detailed information about each operation:
 ## License
 
 These scripts are provided as-is for personal and commercial use.
-
-## Contributing
-
-Feel free to submit issues, fork the repository, and create pull requests for any improvements.
 
