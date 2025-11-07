@@ -54,6 +54,7 @@ OPTIONS:
     --use-exif-date        Use EXIF date for STAGE2 organization (requires exiftool)
     --verify               Verify copied files using MD5 checksums
     --log <file>           Write detailed log to specified file
+    --structured-log <file> Write structured log with filename mappings and date tags
     --progress             Show progress bar during copy operations
     --quiet                Suppress verbose output
     --set-remark <text>    Set remark/comment for files (stored in EXIF ImageDescription and UserComment)
@@ -146,6 +147,10 @@ while [[ $# -gt 0 ]]; do
             LOG_FILE="$2"
             shift 2
             ;;
+        --structured-log)
+            STRUCTURED_LOG_FILE="$2"
+            shift 2
+            ;;
         --progress)
             SHOW_PROGRESS=true
             shift
@@ -212,6 +217,17 @@ fi
 # Initialize log file
 if [[ -n "$LOG_FILE" ]]; then
     set_log_file "$LOG_FILE"
+fi
+
+# Initialize structured log file
+if [[ -n "$STRUCTURED_LOG_FILE" ]]; then
+    if [[ "$DRY_RUN" == false ]]; then
+        # Write header to structured log file
+        echo "Source File Name|DateTimeOriginal|CreateDate|ModifyDate|FileModifyDate|DateTime|DateCreated|DateModified|Final File Name" > "$STRUCTURED_LOG_FILE"
+        print_success "Structured log file: $STRUCTURED_LOG_FILE"
+    else
+        print_info "Would create structured log file: $STRUCTURED_LOG_FILE"
+    fi
 fi
 
 # Create STAGE directories if they don't exist
@@ -342,6 +358,18 @@ copy_to_stage2() {
         log_message "FILENAME MAPPING: '$original_filename' → '$final_filename'"
     else
         log_message "FILENAME MAPPING: '$original_filename' → '$final_filename' (no change)"
+    fi
+    
+    # Write to structured log file if enabled
+    if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
+        # Get all date-related EXIF tags
+        local date_tags=$(get_all_date_tags "$src_file")
+        # Write: Source File Name|DateTimeOriginal|CreateDate|ModifyDate|FileModifyDate|DateTime|DateCreated|DateModified|Final File Name
+        echo "${original_filename}|${date_tags}|${final_filename}" >> "$STRUCTURED_LOG_FILE"
+    elif [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == true ]]; then
+        # In dry run mode, still get date tags for preview
+        local date_tags=$(get_all_date_tags "$src_file")
+        print_info "Would write to structured log: ${original_filename}|${date_tags}|${final_filename}"
     fi
     
     copy_file_with_verification "$src_file" "$dest_file" "$VERIFY_COPY" "STAGE2"
@@ -651,5 +679,11 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 
 close_log_file
+
+# Close structured log file
+if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
+    print_success "Structured log file saved to: $STRUCTURED_LOG_FILE"
+    print_info "Structured log contains: Source File Name | Date Tags | Final File Name"
+fi
 
 exit 0

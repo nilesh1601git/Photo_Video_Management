@@ -68,6 +68,42 @@ get_exif_createdate() {
     exiftool -s -s -s -CreateDate "$file" 2>/dev/null
 }
 
+# Function to get all date-related EXIF tags as a pipe-separated string
+# Returns: DateTimeOriginal|CreateDate|ModifyDate|FileModifyDate|DateTime|DateCreated|DateModified
+get_all_date_tags() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        echo "N/A|N/A|N/A|N/A|N/A|N/A|N/A"
+        return 1
+    fi
+    
+    # Extract common date-related tags
+    local datetime_original=$(exiftool -s -s -s -DateTimeOriginal "$file" 2>/dev/null)
+    [[ -z "$datetime_original" ]] && datetime_original="N/A"
+    
+    local create_date=$(exiftool -s -s -s -CreateDate "$file" 2>/dev/null)
+    [[ -z "$create_date" ]] && create_date="N/A"
+    
+    local modify_date=$(exiftool -s -s -s -ModifyDate "$file" 2>/dev/null)
+    [[ -z "$modify_date" ]] && modify_date="N/A"
+    
+    local file_modify_date=$(exiftool -s -s -s -FileModifyDate "$file" 2>/dev/null)
+    [[ -z "$file_modify_date" ]] && file_modify_date="N/A"
+    
+    local datetime=$(exiftool -s -s -s -DateTime "$file" 2>/dev/null)
+    [[ -z "$datetime" ]] && datetime="N/A"
+    
+    local date_created=$(exiftool -s -s -s -DateCreated "$file" 2>/dev/null)
+    [[ -z "$date_created" ]] && date_created="N/A"
+    
+    local date_modified=$(exiftool -s -s -s -DateModified "$file" 2>/dev/null)
+    [[ -z "$date_modified" ]] && date_modified="N/A"
+    
+    # Return pipe-separated values
+    echo "${datetime_original}|${create_date}|${modify_date}|${file_modify_date}|${datetime}|${date_created}|${date_modified}"
+}
+
 # Function to format EXIF CreateDate to YYYYMMDD_HHMMSS format
 # Returns: YYYYMMDD_HHMMSS format on success, empty string on failure
 format_exif_date_to_filename() {
