@@ -1,425 +1,33 @@
-[0;32m✅ Created directories: TEST_DATA/STAGE1 and TEST_DATA/STAGE2[0m
-[0;34mℹ️  Starting photo management process...[0m
-[0;34mℹ️  Source: TEST_DATA/[0m
-[0;34mℹ️  Pattern: *[0m
-[0;34mℹ️  STAGE1: TEST_DATA/STAGE1 (flat backup - original filenames preserved)[0m
-[0;34mℹ️  STAGE2: TEST_DATA/STAGE2 (renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate)[0m
-[0;34mℹ️  STAGE2 Organization: Flat structure[0m
-
-[0;34mℹ️  Counting files...[0m
-[0;34mℹ️  Found 29 files to process[0m
-
-[KProgress: [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   3% (1/29) - IMG_0013.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0013.JPG' → 'TEST_DATA/STAGE1/IMG_0013.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0013.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 23:17:31+05:30
-  [File]          FileAccessDate                  : 2025:11:05 23:17:31+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 23:17:31+05:30
-  [EXIF]          ModifyDate                      : 2017:01:29 22:39:02
-  [EXIF]          DateTimeOriginal                : 2017:01:29 22:39:02
-  [EXIF]          CreateDate                      : 2017:01:29 22:39:02
-  [EXIF]          SubSecTimeOriginal              : 150
-  [EXIF]          SubSecTimeDigitized             : 150
-  [Composite]     SubSecCreateDate                : 2017:01:29 22:39:02.150
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:29 22:39:02.150
-[K[0;34mℹ️  Filename mapping: 'IMG_0013.JPG' → '20170129_223902.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0013.JPG' → 'TEST_DATA/STAGE2/20170129_223902.jpg'[0m
-[KProgress: [███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   6% (2/29) - IMG_0018.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0018.JPG' → 'TEST_DATA/STAGE1/IMG_0018.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0018.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:35:48
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:35:48
-  [EXIF]          CreateDate                      : 2017:01:31 09:35:48
-  [EXIF]          SubSecTimeOriginal              : 513
-  [EXIF]          SubSecTimeDigitized             : 513
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:35:48.513
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:35:48.513
-[K[0;34mℹ️  Filename mapping: 'IMG_0018.JPG' → '20170131_093548.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0018.JPG' → 'TEST_DATA/STAGE2/20170131_093548.jpg'[0m
-[KProgress: [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  10% (3/29) - IMG_0019.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0019.JPG' → 'TEST_DATA/STAGE1/IMG_0019.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0019.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:36:42
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:36:42
-  [EXIF]          CreateDate                      : 2017:01:31 09:36:42
-  [EXIF]          SubSecTimeOriginal              : 893
-  [EXIF]          SubSecTimeDigitized             : 893
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:36:42.893
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:36:42.893
-[K[0;34mℹ️  Filename mapping: 'IMG_0019.JPG' → '20170131_093642.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0019.JPG' → 'TEST_DATA/STAGE2/20170131_093642.jpg'[0m
-[KProgress: [██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  13% (4/29) - IMG_0020.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0020.JPG' → 'TEST_DATA/STAGE1/IMG_0020.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0020.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:36:50
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:36:50
-  [EXIF]          CreateDate                      : 2017:01:31 09:36:50
-  [EXIF]          SubSecTimeOriginal              : 137
-  [EXIF]          SubSecTimeDigitized             : 137
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:36:50.137
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:36:50.137
-[K[0;34mℹ️  Filename mapping: 'IMG_0020.JPG' → '20170131_093650.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0020.JPG' → 'TEST_DATA/STAGE2/20170131_093650.jpg'[0m
-[KProgress: [████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  17% (5/29) - IMG_0021.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0021.JPG' → 'TEST_DATA/STAGE1/IMG_0021.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0021.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:37:00
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:37:00
-  [EXIF]          CreateDate                      : 2017:01:31 09:37:00
-  [EXIF]          SubSecTimeOriginal              : 085
-  [EXIF]          SubSecTimeDigitized             : 085
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:37:00.085
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:37:00.085
-[K[0;34mℹ️  Filename mapping: 'IMG_0021.JPG' → '20170131_093700.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0021.JPG' → 'TEST_DATA/STAGE2/20170131_093700.jpg'[0m
-[KProgress: [██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  20% (6/29) - IMG_0022.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0022.JPG' → 'TEST_DATA/STAGE1/IMG_0022.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0022.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:37:01
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:37:01
-  [EXIF]          CreateDate                      : 2017:01:31 09:37:01
-  [EXIF]          SubSecTimeOriginal              : 513
-  [EXIF]          SubSecTimeDigitized             : 513
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:37:01.513
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:37:01.513
-[K[0;34mℹ️  Filename mapping: 'IMG_0022.JPG' → '20170131_093701.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0022.JPG' → 'TEST_DATA/STAGE2/20170131_093701.jpg'[0m
-[KProgress: [████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  24% (7/29) - IMG_0023.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0023.JPG' → 'TEST_DATA/STAGE1/IMG_0023.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0023.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:37:13
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:37:13
-  [EXIF]          CreateDate                      : 2017:01:31 09:37:13
-  [EXIF]          SubSecTimeOriginal              : 202
-  [EXIF]          SubSecTimeDigitized             : 202
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:37:13.202
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:37:13.202
-[K[0;34mℹ️  Filename mapping: 'IMG_0023.JPG' → '20170131_093713.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0023.JPG' → 'TEST_DATA/STAGE2/20170131_093713.jpg'[0m
-[KProgress: [█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  27% (8/29) - IMG_0024.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0024.JPG' → 'TEST_DATA/STAGE1/IMG_0024.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0024.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:37:17
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:37:17
-  [EXIF]          CreateDate                      : 2017:01:31 09:37:17
-  [EXIF]          SubSecTimeOriginal              : 589
-  [EXIF]          SubSecTimeDigitized             : 589
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:37:17.589
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:37:17.589
-[K[0;34mℹ️  Filename mapping: 'IMG_0024.JPG' → '20170131_093717.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0024.JPG' → 'TEST_DATA/STAGE2/20170131_093717.jpg'[0m
-[KProgress: [███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  31% (9/29) - IMG_0025.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0025.JPG' → 'TEST_DATA/STAGE1/IMG_0025.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0025.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:37:45
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:37:45
-  [EXIF]          CreateDate                      : 2017:01:31 09:37:45
-  [EXIF]          SubSecTimeOriginal              : 418
-  [EXIF]          SubSecTimeDigitized             : 418
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:37:45.418
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:37:45.418
-[K[0;34mℹ️  Filename mapping: 'IMG_0025.JPG' → '20170131_093745.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0025.JPG' → 'TEST_DATA/STAGE2/20170131_093745.jpg'[0m
-[KProgress: [█████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  34% (10/29) - IMG_0026.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0026.JPG' → 'TEST_DATA/STAGE1/IMG_0026.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0026.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:42:38
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:42:38
-  [EXIF]          CreateDate                      : 2017:01:31 09:42:38
-  [EXIF]          SubSecTimeOriginal              : 982
-  [EXIF]          SubSecTimeDigitized             : 982
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:42:38.982
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:42:38.982
-[K[0;34mℹ️  Filename mapping: 'IMG_0026.JPG' → '20170131_094238.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0026.JPG' → 'TEST_DATA/STAGE2/20170131_094238.jpg'[0m
-[KProgress: [██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  37% (11/29) - IMG_0027.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0027.JPG' → 'TEST_DATA/STAGE1/IMG_0027.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0027.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:01:31 09:42:42
-  [EXIF]          DateTimeOriginal                : 2017:01:31 09:42:42
-  [EXIF]          CreateDate                      : 2017:01:31 09:42:42
-  [EXIF]          SubSecTimeOriginal              : 043
-  [EXIF]          SubSecTimeDigitized             : 043
-  [Composite]     SubSecCreateDate                : 2017:01:31 09:42:42.043
-  [Composite]     SubSecDateTimeOriginal          : 2017:01:31 09:42:42.043
-[K[0;34mℹ️  Filename mapping: 'IMG_0027.JPG' → '20170131_094242.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0027.JPG' → 'TEST_DATA/STAGE2/20170131_094242.jpg'[0m
-[KProgress: [████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  41% (12/29) - IMG_0033.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0033.JPG' → 'TEST_DATA/STAGE1/IMG_0033.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0033.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 11:57:07
-  [EXIF]          DateTimeOriginal                : 2017:02:05 11:57:07
-  [EXIF]          CreateDate                      : 2017:02:05 11:57:07
-  [EXIF]          SubSecTimeOriginal              : 364
-  [EXIF]          SubSecTimeDigitized             : 364
-  [Composite]     SubSecCreateDate                : 2017:02:05 11:57:07.364
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 11:57:07.364
-[K[0;34mℹ️  Filename mapping: 'IMG_0033.JPG' → '20170205_115707.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0033.JPG' → 'TEST_DATA/STAGE2/20170205_115707.jpg'[0m
-[KProgress: [██████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  44% (13/29) - IMG_0034.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0034.JPG' → 'TEST_DATA/STAGE1/IMG_0034.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0034.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 11:57:12
-  [EXIF]          DateTimeOriginal                : 2017:02:05 11:57:12
-  [EXIF]          CreateDate                      : 2017:02:05 11:57:12
-  [EXIF]          SubSecTimeOriginal              : 669
-  [EXIF]          SubSecTimeDigitized             : 669
-  [Composite]     SubSecCreateDate                : 2017:02:05 11:57:12.669
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 11:57:12.669
-[K[0;34mℹ️  Filename mapping: 'IMG_0034.JPG' → '20170205_115712.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0034.JPG' → 'TEST_DATA/STAGE2/20170205_115712.jpg'[0m
-[KProgress: [████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░]  48% (14/29) - IMG_0035.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0035.JPG' → 'TEST_DATA/STAGE1/IMG_0035.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0035.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:24
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:24
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:24
-  [EXIF]          SubSecTimeOriginal              : 666
-  [EXIF]          SubSecTimeDigitized             : 666
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:24.666
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:24.666
-[K[0;34mℹ️  Filename mapping: 'IMG_0035.JPG' → '20170205_120324.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0035.JPG' → 'TEST_DATA/STAGE2/20170205_120324.jpg'[0m
-[KProgress: [█████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░]  51% (15/29) - IMG_0036.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0036.JPG' → 'TEST_DATA/STAGE1/IMG_0036.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0036.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:41
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:41
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:41
-  [EXIF]          SubSecTimeOriginal              : 092
-  [EXIF]          SubSecTimeDigitized             : 092
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:41.092
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:41.092
-[K[0;34mℹ️  Filename mapping: 'IMG_0036.JPG' → '20170205_120341.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0036.JPG' → 'TEST_DATA/STAGE2/20170205_120341.jpg'[0m
-[KProgress: [███████████████████████████░░░░░░░░░░░░░░░░░░░░░░░]  55% (16/29) - IMG_0037.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0037.JPG' → 'TEST_DATA/STAGE1/IMG_0037.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0037.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:49
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:49
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:49
-  [EXIF]          SubSecTimeOriginal              : 969
-  [EXIF]          SubSecTimeDigitized             : 969
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:49.969
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:49.969
-[K[0;34mℹ️  Filename mapping: 'IMG_0037.JPG' → '20170205_120349.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0037.JPG' → 'TEST_DATA/STAGE2/20170205_120349.jpg'[0m
-[KProgress: [█████████████████████████████░░░░░░░░░░░░░░░░░░░░░]  58% (17/29) - IMG_0038.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0038.JPG' → 'TEST_DATA/STAGE1/IMG_0038.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0038.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:51
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:51
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:51
-  [EXIF]          SubSecTimeOriginal              : 091
-  [EXIF]          SubSecTimeDigitized             : 091
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:51.091
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:51.091
-[K[0;34mℹ️  Filename mapping: 'IMG_0038.JPG' → '20170205_120351.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0038.JPG' → 'TEST_DATA/STAGE2/20170205_120351.jpg'[0m
-[KProgress: [███████████████████████████████░░░░░░░░░░░░░░░░░░░]  62% (18/29) - IMG_00391.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_00391.JPG' → 'TEST_DATA/STAGE1/IMG_00391.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_00391.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:44:24+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:44:29+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:44:24+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:53
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:53
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:53
-  [EXIF]          SubSecTimeOriginal              : 744
-  [EXIF]          SubSecTimeDigitized             : 744
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:53.744
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:53.744
-[K[0;34mℹ️  Filename mapping: 'IMG_00391.JPG' → '20170205_120353.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_00391.JPG' → 'TEST_DATA/STAGE2/20170205_120353.jpg'[0m
-[KProgress: [████████████████████████████████░░░░░░░░░░░░░░░░░░]  65% (19/29) - IMG_0039.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0039.JPG' → 'TEST_DATA/STAGE1/IMG_0039.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0039.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:53
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:53
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:53
-  [EXIF]          SubSecTimeOriginal              : 744
-  [EXIF]          SubSecTimeDigitized             : 744
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:53.744
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:53.744
-[K[1;33m⚠️  Skipping STAGE2 '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0039.JPG' - identical file already exists: 'TEST_DATA/STAGE2/20170205_120353.jpg' (checksum match)[0m
-[KProgress: [██████████████████████████████████░░░░░░░░░░░░░░░░]  68% (20/29) - IMG_0040.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0040.JPG' → 'TEST_DATA/STAGE1/IMG_0040.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0040.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:53
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:53
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:53
-  [EXIF]          SubSecTimeOriginal              : 999
-  [EXIF]          SubSecTimeDigitized             : 999
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:53.999
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:53.999
-[K[1;33m⚠️  Duplicate filename detected in STAGE2, using: '20170205_120353_001.jpg'[0m
-[K[0;34mℹ️  Filename mapping: 'IMG_0040.JPG' → '20170205_120353_001.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0040.JPG' → 'TEST_DATA/STAGE2/20170205_120353_001.jpg'[0m
-[KProgress: [████████████████████████████████████░░░░░░░░░░░░░░]  72% (21/29) - IMG_0041.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0041.JPG' → 'TEST_DATA/STAGE1/IMG_0041.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0041.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:03:58
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:03:58
-  [EXIF]          CreateDate                      : 2017:02:05 12:03:58
-  [EXIF]          SubSecTimeOriginal              : 080
-  [EXIF]          SubSecTimeDigitized             : 080
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:03:58.080
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:03:58.080
-[K[0;34mℹ️  Filename mapping: 'IMG_0041.JPG' → '20170205_120358.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0041.JPG' → 'TEST_DATA/STAGE2/20170205_120358.jpg'[0m
-[KProgress: [█████████████████████████████████████░░░░░░░░░░░░░]  75% (22/29) - IMG_0042.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0042.JPG' → 'TEST_DATA/STAGE1/IMG_0042.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0042.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:32:49
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:32:49
-  [EXIF]          CreateDate                      : 2017:02:05 12:32:49
-  [EXIF]          SubSecTimeOriginal              : 471
-  [EXIF]          SubSecTimeDigitized             : 471
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:32:49.471
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:32:49.471
-[K[0;34mℹ️  Filename mapping: 'IMG_0042.JPG' → '20170205_123249.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0042.JPG' → 'TEST_DATA/STAGE2/20170205_123249.jpg'[0m
-[KProgress: [███████████████████████████████████████░░░░░░░░░░░]  79% (23/29) - IMG_0043.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0043.JPG' → 'TEST_DATA/STAGE1/IMG_0043.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0043.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:33:10
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:33:10
-  [EXIF]          CreateDate                      : 2017:02:05 12:33:10
-  [EXIF]          SubSecTimeOriginal              : 838
-  [EXIF]          SubSecTimeDigitized             : 838
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:33:10.838
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:33:10.838
-[K[0;34mℹ️  Filename mapping: 'IMG_0043.JPG' → '20170205_123310.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0043.JPG' → 'TEST_DATA/STAGE2/20170205_123310.jpg'[0m
-[KProgress: [█████████████████████████████████████████░░░░░░░░░]  82% (24/29) - IMG_0044.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0044.JPG' → 'TEST_DATA/STAGE1/IMG_0044.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0044.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:33:13
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:33:13
-  [EXIF]          CreateDate                      : 2017:02:05 12:33:13
-  [EXIF]          SubSecTimeOriginal              : 592
-  [EXIF]          SubSecTimeDigitized             : 592
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:33:13.592
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:33:13.592
-[K[0;34mℹ️  Filename mapping: 'IMG_0044.JPG' → '20170205_123313.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0044.JPG' → 'TEST_DATA/STAGE2/20170205_123313.jpg'[0m
-[KProgress: [███████████████████████████████████████████░░░░░░░]  86% (25/29) - IMG_0045.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0045.JPG' → 'TEST_DATA/STAGE1/IMG_0045.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0045.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:35:24
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:35:24
-  [EXIF]          CreateDate                      : 2017:02:05 12:35:24
-  [EXIF]          SubSecTimeOriginal              : 672
-  [EXIF]          SubSecTimeDigitized             : 672
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:35:24.672
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:35:24.672
-[K[0;34mℹ️  Filename mapping: 'IMG_0045.JPG' → '20170205_123524.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0045.JPG' → 'TEST_DATA/STAGE2/20170205_123524.jpg'[0m
-[KProgress: [████████████████████████████████████████████░░░░░░]  89% (26/29) - IMG_0046.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0046.JPG' → 'TEST_DATA/STAGE1/IMG_0046.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0046.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:35:30
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:35:30
-  [EXIF]          CreateDate                      : 2017:02:05 12:35:30
-  [EXIF]          SubSecTimeOriginal              : 589
-  [EXIF]          SubSecTimeDigitized             : 589
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:35:30.589
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:35:30.589
-[K[0;34mℹ️  Filename mapping: 'IMG_0046.JPG' → '20170205_123530.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0046.JPG' → 'TEST_DATA/STAGE2/20170205_123530.jpg'[0m
-[KProgress: [██████████████████████████████████████████████░░░░]  93% (27/29) - IMG_0047.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0047.JPG' → 'TEST_DATA/STAGE1/IMG_0047.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0047.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:35:36
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:35:36
-  [EXIF]          CreateDate                      : 2017:02:05 12:35:36
-  [EXIF]          SubSecTimeOriginal              : 405
-  [EXIF]          SubSecTimeDigitized             : 405
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:35:36.405
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:35:36.405
-[K[0;34mℹ️  Filename mapping: 'IMG_0047.JPG' → '20170205_123536.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0047.JPG' → 'TEST_DATA/STAGE2/20170205_123536.jpg'[0m
-[KProgress: [████████████████████████████████████████████████░░]  96% (28/29) - IMG_0048.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0048.JPG' → 'TEST_DATA/STAGE1/IMG_0048.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0048.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:38:15
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:38:15
-  [EXIF]          CreateDate                      : 2017:02:05 12:38:15
-  [EXIF]          SubSecTimeOriginal              : 247
-  [EXIF]          SubSecTimeDigitized             : 247
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:38:15.247
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:38:15.247
-[K[0;34mℹ️  Filename mapping: 'IMG_0048.JPG' → '20170205_123815.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0048.JPG' → 'TEST_DATA/STAGE2/20170205_123815.jpg'[0m
-[KProgress: [██████████████████████████████████████████████████] 100% (29/29) - IMG_0049.JPG[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0049.JPG' → 'TEST_DATA/STAGE1/IMG_0049.JPG'[0m
-[K[0;34mℹ️  Date-related EXIF tags for 'IMG_0049.JPG':[0m
-  [File]          FileModifyDate                  : 2025:11:05 22:27:17+05:30
-  [File]          FileAccessDate                  : 2025:11:05 22:33:03+05:30
-  [File]          FileInodeChangeDate             : 2025:11:05 22:27:17+05:30
-  [EXIF]          ModifyDate                      : 2017:02:05 12:38:22
-  [EXIF]          DateTimeOriginal                : 2017:02:05 12:38:22
-  [EXIF]          CreateDate                      : 2017:02:05 12:38:22
-  [EXIF]          SubSecTimeOriginal              : 586
-  [EXIF]          SubSecTimeDigitized             : 586
-  [Composite]     SubSecCreateDate                : 2017:02:05 12:38:22.586
-  [Composite]     SubSecDateTimeOriginal          : 2017:02:05 12:38:22.586
-[K[0;34mℹ️  Filename mapping: 'IMG_0049.JPG' → '20170205_123822.jpg'[0m
-[K[0;32m✅ Copied: '/home/nilesh/Scripts/GIT/Photo_Video_Management/TEST_DATA/IMG_0049.JPG' → 'TEST_DATA/STAGE2/20170205_123822.jpg'[0m
-[K
-
-[0;34mℹ️  =========================================[0m
-[0;34mℹ️  SUMMARY[0m
-[0;34mℹ️  =========================================[0m
-[0;34mℹ️  Total files processed: 29[0m
-[0;32m✅ Successfully copied: 29[0m
-[0;34mℹ️  =========================================[0m
+=========================================
+Photo Management Log
+Started: 2025-11-08 18:06:25
+=========================================
+[2025-11-08 18:06:25] Starting photo management process
+[2025-11-08 18:06:25] Source: ./TEST_DATA
+[2025-11-08 18:06:25] Pattern: *
+[2025-11-08 18:06:25] STAGE1: ./STAGE1 (flat backup)
+[2025-11-08 18:06:25] STAGE2: ./STAGE2 (working copy)
+[2025-11-08 18:06:25] Organize by date: false
+[2025-11-08 18:06:25] Use EXIF date: true
+[2025-11-08 18:06:25] Verify copy: false
+[2025-11-08 18:06:25] Move mode: false
+[2025-11-08 18:06:25] Found 29 files to process
+[2025-11-08 18:06:25] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0013.JPG'
+[2025-11-08 18:06:26] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170129_223902.jpg'
+[2025-11-08 18:06:26] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:26] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0018.JPG'
+[2025-11-08 18:06:26] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170131_093548.jpg'
+[2025-11-08 18:06:26] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:26] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0019.JPG'
+[2025-11-08 18:06:27] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170131_093642.jpg'
+[2025-11-08 18:06:27] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:27] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0020.JPG'
+[2025-11-08 18:06:27] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170131_093650.jpg'
+[2025-11-08 18:06:27] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:27] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0021.JPG'
+[2025-11-08 18:06:27] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170131_093700.jpg'
+[2025-11-08 18:06:27] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:27] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0022.JPG'
+[2025-11-08 18:06:28] SKIP: Identical file exists in STAGE2 (checksum match): './STAGE2/20170131_093701.jpg'
+[2025-11-08 18:06:28] SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)
+[2025-11-08 18:06:28] SKIP: Identical file exists (checksum match): './STAGE1/IMG_0023.JPG'

@@ -9,8 +9,13 @@
 
 set -e  # Exit on error
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the directory where this script is located (handle symlinks)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if [[ -L "$SCRIPT_PATH" ]]; then
+    # Resolve symlink to actual file
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 
 # Load all modules
 source "$SCRIPT_DIR/module/load_modules.sh"
@@ -219,11 +224,11 @@ if [[ -n "$LOG_FILE" ]]; then
     set_log_file "$LOG_FILE"
 fi
 
-# Initialize structured log file
+# Initialize structured log file (CSV format)
 if [[ -n "$STRUCTURED_LOG_FILE" ]]; then
     if [[ "$DRY_RUN" == false ]]; then
-        # Write header to structured log file
-        echo "Source File Name|DateTimeOriginal|CreateDate|ModifyDate|FileModifyDate|DateTime|DateCreated|DateModified|Final File Name" > "$STRUCTURED_LOG_FILE"
+        # Write CSV header to structured log file
+        echo "Source_filename,[EXIF]ModifyDate,[EXIF]DateTimeOriginal,[EXIF]CreateDate,[Composite]SubSecCreateDate,[Composite]SubSecDateTimeOriginal,STAGE1,STAGE2,Remark" > "$STRUCTURED_LOG_FILE"
         print_success "Structured log file: $STRUCTURED_LOG_FILE"
     else
         print_info "Would create structured log file: $STRUCTURED_LOG_FILE"
@@ -232,16 +237,42 @@ fi
 
 # Create STAGE directories if they don't exist
 if [[ "$DRY_RUN" == false ]]; then
-    mkdir -p "$STAGE1_DIR"
-    mkdir -p "$STAGE2_DIR"
-    print_success "Created directories: $STAGE1_DIR and $STAGE2_DIR"
-    log_message "Created directories: $STAGE1_DIR and $STAGE2_DIR"
+    stage1_created=false
+    stage2_created=false
+    
+    if [[ ! -d "$STAGE1_DIR" ]]; then
+        mkdir -p "$STAGE1_DIR"
+        stage1_created=true
+    fi
+    
+    if [[ ! -d "$STAGE2_DIR" ]]; then
+        mkdir -p "$STAGE2_DIR"
+        stage2_created=true
+    fi
+    
+    if [[ "$stage1_created" == true ]] || [[ "$stage2_created" == true ]]; then
+        created_dirs=""
+        if [[ "$stage1_created" == true ]]; then
+            created_dirs="$STAGE1_DIR"
+        fi
+        if [[ "$stage2_created" == true ]]; then
+            if [[ -n "$created_dirs" ]]; then
+                created_dirs="$created_dirs and $STAGE2_DIR"
+            else
+                created_dirs="$STAGE2_DIR"
+            fi
+        fi
+        print_success "Created directories: $created_dirs"
+        log_message "Created directories: $created_dirs"
+    fi
 else
     print_info "DRY RUN MODE - No files will be copied"
     print_info "Would create directories: $STAGE1_DIR and $STAGE2_DIR"
 fi
 
 # Function to copy file to STAGE1 (flat backup, no organization)
+# Returns: 0 on success, 1 on failure, 2 on skip
+# Sets global variable STAGE1_DEST_PATH with destination path or "Skipped"
 copy_to_stage1() {
     local src_file="$1"
     local dest_file="$STAGE1_DIR/$(basename "$src_file")"
@@ -251,7 +282,23 @@ copy_to_stage1() {
         display_exif_remark "$src_file"
     fi
     
-    copy_file_with_verification "$src_file" "$dest_file" false "STAGE1"
+    # Check if file already exists with matching checksum
+    if [[ -e "$dest_file" ]]; then
+        if files_same_checksum "$src_file" "$dest_file"; then
+            STAGE1_DEST_PATH="Skipped"
+            return 2
+        fi
+    fi
+    
+    # Try to copy (file doesn't exist or differs, so it should be copied)
+    if copy_file_with_verification "$src_file" "$dest_file" false "STAGE1"; then
+        # File was successfully copied (or skipped internally, but we already checked above)
+        STAGE1_DEST_PATH="$dest_file"
+        return 0
+    else
+        STAGE1_DEST_PATH=""
+        return 1
+    fi
 }
 
 # Function to copy file to STAGE2 (with optional organization and renaming)
@@ -279,9 +326,11 @@ copy_to_stage2() {
     local existing_file=$(find_file_with_matching_checksum "$src_file" "$dest_base_dir")
     if [[ -n "$existing_file" ]]; then
         if [[ "$VERBOSE" == true ]]; then
-            print_warning "Skipping STAGE2 '$src_file' - identical file already exists: '$existing_file' (checksum match)"
+            print_info "Skipping STAGE2 '$src_file' - identical file already exists: '$existing_file' (checksum match)"
         fi
         log_message "SKIP: Identical file exists in STAGE2 (checksum match): '$existing_file'"
+        # Set STAGE2_DEST_PATH to the existing file path for CSV log
+        STAGE2_DEST_PATH="$existing_file"
         # Return 2 to indicate skipped (not an error, but not copied either)
         # This prevents move mode from deleting source when file wasn't actually copied
         return 2
@@ -296,8 +345,35 @@ copy_to_stage2() {
     else
         # Fall back to original filename if EXIF date not available
         new_filename="$original_filename"
-        print_warning "Could not get EXIF CreateDate for '$src_file', using original filename"
-        log_message "WARNING: Could not get EXIF CreateDate for '$src_file', using original filename"
+        
+        # Check if filename already contains a date pattern (YYYYMMDD_HHMMSS)
+        # If so, suppress warning for video files as this is expected behavior
+        local filename_base="${original_filename%.*}"
+        local suppress_warning=false
+        
+        if is_video_file "$src_file"; then
+            # Check if filename matches YYYYMMDD_HHMMSS pattern
+            if [[ $filename_base =~ ^[0-9]{8}_[0-9]{6} ]]; then
+                suppress_warning=true
+            fi
+        fi
+        
+        if [[ "$suppress_warning" == false ]]; then
+            # For video files, this is often expected (many video formats don't have EXIF CreateDate)
+            # Make the message less alarming for video files
+            if is_video_file "$src_file"; then
+                if [[ "$VERBOSE" == true ]]; then
+                    print_info "Video file '$src_file' - no creation date in metadata, using original filename"
+                fi
+                log_message "INFO: Video file '$src_file' - no creation date in metadata, using original filename"
+            else
+                print_warning "Could not get EXIF CreateDate for '$src_file', using original filename"
+                log_message "WARNING: Could not get EXIF CreateDate for '$src_file', using original filename"
+            fi
+        elif [[ "$VERBOSE" == true ]]; then
+            # For video files with date in filename, just log it without warning
+            log_message "INFO: Using original filename for video file '$src_file' (date already in filename)"
+        fi
     fi
 
     # Determine subdirectory if organizing by date
@@ -360,19 +436,15 @@ copy_to_stage2() {
         log_message "FILENAME MAPPING: '$original_filename' → '$final_filename' (no change)"
     fi
     
-    # Write to structured log file if enabled
-    if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
-        # Get all date-related EXIF tags
-        local date_tags=$(get_all_date_tags "$src_file")
-        # Write: Source File Name|DateTimeOriginal|CreateDate|ModifyDate|FileModifyDate|DateTime|DateCreated|DateModified|Final File Name
-        echo "${original_filename}|${date_tags}|${final_filename}" >> "$STRUCTURED_LOG_FILE"
-    elif [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == true ]]; then
-        # In dry run mode, still get date tags for preview
-        local date_tags=$(get_all_date_tags "$src_file")
-        print_info "Would write to structured log: ${original_filename}|${date_tags}|${final_filename}"
+    # Copy file and set STAGE2_DEST_PATH
+    # Note: We already checked for identical files above, so this should copy
+    if copy_file_with_verification "$src_file" "$dest_file" "$VERIFY_COPY" "STAGE2"; then
+        STAGE2_DEST_PATH="$dest_file"
+        return 0
+    else
+        STAGE2_DEST_PATH=""
+        return 1
     fi
-    
-    copy_file_with_verification "$src_file" "$dest_file" "$VERIFY_COPY" "STAGE2"
 }
 
 # Main processing
@@ -583,54 +655,91 @@ for file in "${files_to_process[@]}"; do
     # Copy to STAGE1 (flat backup)
     stage1_success=false
     stage2_success=false
+    STAGE1_DEST_PATH=""
+    STAGE2_DEST_PATH=""
 
-    if copy_to_stage1 "$file"; then
+    copy_to_stage1 "$file"
+    stage1_result=$?
+    
+    if [[ $stage1_result -eq 0 ]]; then
         stage1_success=true
-        # Copy to STAGE2 (with optional organization)
-        copy_to_stage2 "$file"
-        stage2_result=$?
-        
-        if [[ $stage2_result -eq 0 ]]; then
-            # Successfully copied to STAGE2
-            stage2_success=true
-            ((copied_files++))
-            if [[ "$VERIFY_COPY" == true ]]; then
-                ((verified_files++))
-            fi
-            
-            # Move mode: delete source file after successful copy to both stages
-            if [[ "$MOVE_MODE" == true ]]; then
-                if [[ "$DRY_RUN" == true ]]; then
-                    print_info "Would move (delete source): '$file'"
-                    log_message "DRY RUN: Would move (delete source) '$file'"
-                else
-                    if rm -f "$file"; then
-                        print_success "Moved (deleted source): '$file'"
-                        log_message "MOVED: Deleted source file '$file' after successful copy to both stages"
-                    else
-                        print_error "Failed to delete source file: '$file'"
-                        log_message "ERROR: Failed to delete source file '$file'"
-                        ((failed_files++))
-                    fi
-                fi
-            fi
-        elif [[ $stage2_result -eq 2 ]]; then
-            # Skipped (file already exists in STAGE2) - don't delete source in move mode
-            stage2_success=false
-            ((skipped_files++))
-            if [[ "$VERBOSE" == true ]]; then
-                print_info "File skipped in STAGE2 (already exists), source file preserved"
-            fi
-            log_message "SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)"
-        else
-            # Failed to copy to STAGE2
-            stage2_success=false
-            ((failed_files++))
-            log_message "ERROR: Failed to copy to STAGE2: '$file'"
-        fi
+    elif [[ $stage1_result -eq 2 ]]; then
+        # Skipped in STAGE1 (already exists)
+        stage1_success=false
+        ((skipped_files++))
     else
+        # Failed to copy to STAGE1
+        stage1_success=false
         ((failed_files++))
         log_message "ERROR: Failed to copy to STAGE1: '$file'"
+    fi
+    
+    # Copy to STAGE2 (with optional organization)
+    copy_to_stage2 "$file"
+    stage2_result=$?
+    
+    if [[ $stage2_result -eq 0 ]]; then
+        # Successfully copied to STAGE2
+        stage2_success=true
+        ((copied_files++))
+        if [[ "$VERIFY_COPY" == true ]]; then
+            ((verified_files++))
+        fi
+        
+        # Move mode: delete source file after successful copy to both stages
+        if [[ "$MOVE_MODE" == true ]]; then
+            if [[ "$DRY_RUN" == true ]]; then
+                print_info "Would move (delete source): '$file'"
+                log_message "DRY RUN: Would move (delete source) '$file'"
+            else
+                if rm -f "$file"; then
+                    print_success "Moved (deleted source): '$file'"
+                    log_message "MOVED: Deleted source file '$file' after successful copy to both stages"
+                else
+                    print_error "Failed to delete source file: '$file'"
+                    log_message "ERROR: Failed to delete source file '$file'"
+                    ((failed_files++))
+                fi
+            fi
+        fi
+    elif [[ $stage2_result -eq 2 ]]; then
+        # Skipped (file already exists in STAGE2) - don't delete source in move mode
+        stage2_success=false
+        ((skipped_files++))
+        if [[ "$VERBOSE" == true ]]; then
+            print_info "File skipped in STAGE2 (already exists), source file preserved"
+        fi
+        log_message "SKIP: File skipped in STAGE2, source file preserved (not deleted in move mode)"
+    else
+        # Failed to copy to STAGE2
+        stage2_success=false
+        ((failed_files++))
+        log_message "ERROR: Failed to copy to STAGE2: '$file'"
+    fi
+    
+    # Write CSV log entry if structured log is enabled
+    if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
+        # Get all CSV EXIF tags
+        csv_tags=$(get_csv_exif_tags "$file")
+        
+        # Get remark if available
+        remark=$(get_exif_remark "$file")
+        [[ -z "$remark" ]] && remark=""
+        
+        # Set STAGE1 path (use "Skipped" if not set or empty)
+        stage1_path="${STAGE1_DEST_PATH:-Skipped}"
+        if [[ -z "$stage1_path" ]]; then
+            stage1_path="Skipped"
+        fi
+        
+        # Set STAGE2 path (use "Skipped" if not set or empty)
+        stage2_path="${STAGE2_DEST_PATH:-Skipped}"
+        if [[ -z "$stage2_path" ]]; then
+            stage2_path="Skipped"
+        fi
+        
+        # Write CSV line: Source_filename,EXIF_tags,STAGE1,STAGE2,Remark
+        echo "${file},${csv_tags},${stage1_path},${stage2_path},${remark}" >> "$STRUCTURED_LOG_FILE"
     fi
 done
 
