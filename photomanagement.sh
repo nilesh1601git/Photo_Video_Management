@@ -23,7 +23,7 @@ source "$SCRIPT_DIR/module/load_modules.sh"
 # Default values
 DRY_RUN=false
 SOURCE_DIR="."
-STAGE1_DIR="./STAGE1"
+STAGE1_DIR=""  # Optional - only used if --stage1 is provided
 STAGE2_DIR="./STAGE2"
 PATTERN="*"
 VERBOSE=true
@@ -35,6 +35,7 @@ SET_REMARK=""
 GET_REMARK=false
 SHOW_REMARK=false
 MOVE_MODE=false
+MAX_FILES=""  # Optional - limit number of files to process
 
 # Associative array to track per-timestamp counters for duplicate filenames in STAGE2
 declare -A stage2_filename_counters
@@ -53,7 +54,7 @@ STAGE2: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate,
 OPTIONS:
     --dry-run              Show what would be copied without actually copying
     --source <dir>         Source directory (default: current directory)
-    --stage1 <dir>         STAGE1 destination - flat backup (default: ./STAGE1)
+    --stage1 <dir>         STAGE1 destination - flat backup (optional, not used if omitted)
     --stage2 <dir>         STAGE2 destination - organized (default: ./STAGE2)
     --organize-by-date     Organize STAGE2 files into YYYY/MM subdirectories
     --use-exif-date        Use EXIF date for STAGE2 organization (requires exiftool)
@@ -66,6 +67,7 @@ OPTIONS:
     --get-remark           Display remark/comment for files
     --show-remark          Show remarks when processing files
     --move                 Move files instead of copying (delete source after successful copy to both stages)
+    --limit <number>       Limit the number of files to process (useful for testing)
     -h, --help             Show this help message
 
 PATTERN:
@@ -76,14 +78,17 @@ EXAMPLES:
     # Dry run - see what would be copied
     $0 --dry-run
 
-    # Basic: Copy to STAGE1 (flat) and STAGE2 (flat)
+    # Basic: Copy to STAGE2 only (flat)
     $0 --source /path/to/photos
 
+    # Copy to STAGE1 (flat) and STAGE2 (flat)
+    $0 --source /path/to/photos --stage1 ./STAGE1
+
     # Copy to STAGE1 (flat) and organize STAGE2 by date from filename
-    $0 --organize-by-date "*.JPG"
+    $0 --organize-by-date "*.JPG" --stage1 ./STAGE1
 
     # Copy to STAGE1 (flat) and organize STAGE2 by EXIF date with verification
-    $0 --organize-by-date --use-exif-date --verify
+    $0 --organize-by-date --use-exif-date --verify --stage1 ./STAGE1
 
     # Full featured backup with logging
     $0 --organize-by-date --use-exif-date --verify --log backup.log --progress
@@ -106,13 +111,16 @@ EXAMPLES:
     # Move files instead of copying (delete source after successful copy)
     $0 --move --source /path/to/photos
 
+    # Process only first 10 files (useful for testing)
+    $0 --source /path/to/photos --limit 10
+
 WORKFLOW:
-    1. Files are copied to STAGE1 maintaining original filenames (pristine backup)
+    1. Files are copied to STAGE1 maintaining original filenames (pristine backup) - OPTIONAL
     2. Files are copied to STAGE2 and renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate
     3. STAGE2 files can be organized into YYYY/MM subdirectories (optional)
     4. Filename mappings (original → new) are logged
     5. Both stages preserve original timestamps
-    6. STAGE1 = backup, STAGE2 = working/organized copy with standardized names
+    6. STAGE1 = backup (optional), STAGE2 = working/organized copy with standardized names
 
 EOF
 }
@@ -180,6 +188,15 @@ while [[ $# -gt 0 ]]; do
             MOVE_MODE=true
             shift
             ;;
+        --limit)
+            MAX_FILES="$2"
+            # Validate that MAX_FILES is a positive integer
+            if ! [[ "$MAX_FILES" =~ ^[1-9][0-9]*$ ]]; then
+                print_error "Invalid limit value: '$MAX_FILES'. Must be a positive integer."
+                exit 1
+            fi
+            shift 2
+            ;;
         -h|--help)
             show_usage
             exit 0
@@ -240,7 +257,7 @@ if [[ "$DRY_RUN" == false ]]; then
     stage1_created=false
     stage2_created=false
     
-    if [[ ! -d "$STAGE1_DIR" ]]; then
+    if [[ -n "$STAGE1_DIR" ]] && [[ ! -d "$STAGE1_DIR" ]]; then
         mkdir -p "$STAGE1_DIR"
         stage1_created=true
     fi
@@ -267,14 +284,30 @@ if [[ "$DRY_RUN" == false ]]; then
     fi
 else
     print_info "DRY RUN MODE - No files will be copied"
-    print_info "Would create directories: $STAGE1_DIR and $STAGE2_DIR"
+    would_create=""
+    if [[ -n "$STAGE1_DIR" ]]; then
+        would_create="$STAGE1_DIR"
+    fi
+    if [[ -n "$would_create" ]]; then
+        would_create="$would_create and $STAGE2_DIR"
+    else
+        would_create="$STAGE2_DIR"
+    fi
+    print_info "Would create directories: $would_create"
 fi
 
 # Function to copy file to STAGE1 (flat backup, no organization)
-# Returns: 0 on success, 1 on failure, 2 on skip
-# Sets global variable STAGE1_DEST_PATH with destination path or "Skipped"
+# Returns: 0 on success, 1 on failure, 2 on skip, 3 if STAGE1 not configured
+# Sets global variable STAGE1_DEST_PATH with destination path or "Skipped" or "Not provided"
 copy_to_stage1() {
     local src_file="$1"
+    
+    # If STAGE1_DIR is not set, skip STAGE1 processing
+    if [[ -z "$STAGE1_DIR" ]]; then
+        STAGE1_DEST_PATH="Not provided"
+        return 3
+    fi
+    
     local dest_file="$STAGE1_DIR/$(basename "$src_file")"
     
     # Display remark if requested
@@ -451,7 +484,11 @@ copy_to_stage2() {
 print_info "Starting photo management process..."
 print_info "Source: $SOURCE_DIR"
 print_info "Pattern: $PATTERN"
-print_info "STAGE1: $STAGE1_DIR (flat backup - original filenames preserved)"
+if [[ -n "$STAGE1_DIR" ]]; then
+    print_info "STAGE1: $STAGE1_DIR (flat backup - original filenames preserved)"
+else
+    print_info "STAGE1: Not configured (skipped)"
+fi
 print_info "STAGE2: $STAGE2_DIR (renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate)"
 if [[ "$ORGANIZE_BY_DATE" == true ]]; then
     print_info "STAGE2 Organization: By date (YYYY/MM)"
@@ -467,7 +504,11 @@ if [[ "$VERIFY_COPY" == true ]]; then
     print_info "Verification: Enabled for STAGE2 (MD5 checksums)"
 fi
 if [[ "$MOVE_MODE" == true ]]; then
-    print_info "Mode: MOVE (source files will be deleted after successful copy to both stages)"
+    if [[ -n "$STAGE1_DIR" ]]; then
+        print_info "Mode: MOVE (source files will be deleted after successful copy to both stages)"
+    else
+        print_info "Mode: MOVE (source files will be deleted after successful copy to STAGE2)"
+    fi
 else
     print_info "Mode: COPY (source files will be preserved)"
 fi
@@ -476,7 +517,11 @@ echo ""
 log_message "Starting photo management process"
 log_message "Source: $SOURCE_DIR"
 log_message "Pattern: $PATTERN"
-log_message "STAGE1: $STAGE1_DIR (flat backup)"
+if [[ -n "$STAGE1_DIR" ]]; then
+    log_message "STAGE1: $STAGE1_DIR (flat backup)"
+else
+    log_message "STAGE1: Not configured (skipped)"
+fi
 log_message "STAGE2: $STAGE2_DIR (working copy)"
 log_message "Organize by date: $ORGANIZE_BY_DATE"
 log_message "Use EXIF date: $USE_EXIF_DATE"
@@ -546,10 +591,16 @@ if [[ "$GET_REMARK" == true ]]; then
     
     files_with_remarks=0
     files_without_remarks=0
+    processed_count=0
     
     for file in "${found_files[@]}"; do
         if [[ -z "$file" ]]; then
             continue
+        fi
+        
+        # Check limit if set
+        if [[ -n "$MAX_FILES" ]] && [[ $processed_count -ge $MAX_FILES ]]; then
+            break
         fi
         
         filename=$(basename "$file")
@@ -564,13 +615,19 @@ if [[ "$GET_REMARK" == true ]]; then
             fi
             ((files_without_remarks++))
         fi
+        
+        ((processed_count++))
     done
     
     echo ""
     print_info "========================================="
     print_info "REMARK SUMMARY"
     print_info "========================================="
-    print_info "Total files processed: ${#found_files[@]}"
+    if [[ -n "$MAX_FILES" ]] && [[ ${#found_files[@]} -gt $MAX_FILES ]] && [[ $processed_count -ge $MAX_FILES ]]; then
+        print_info "Total files processed: $processed_count (limited from ${#found_files[@]})"
+    else
+        print_info "Total files processed: $processed_count"
+    fi
     print_success "Files with remarks: $files_with_remarks"
     if [[ $files_without_remarks -gt 0 ]]; then
         print_warning "Files without remarks: $files_without_remarks"
@@ -601,8 +658,16 @@ rm -f "$temp_file_list"
 for file in "${found_files[@]}"; do
     [[ -n "$file" ]] && ((file_count++))
 done
-print_info "Found $file_count files to process"
-log_message "Found $file_count files to process"
+
+# Apply limit if set
+if [[ -n "$MAX_FILES" ]] && [[ $file_count -gt $MAX_FILES ]]; then
+    print_info "Found $file_count files, limiting to $MAX_FILES files"
+    log_message "Found $file_count files, limiting to $MAX_FILES files"
+    file_count=$MAX_FILES
+else
+    print_info "Found $file_count files to process"
+    log_message "Found $file_count files to process"
+fi
 echo ""
 
 # Process files
@@ -619,6 +684,15 @@ IN_PROGRESS_MODE=true
 for file in "${files_to_process[@]}"; do
     if [[ -z "$file" ]]; then
         continue
+    fi
+    
+    # Check limit if set
+    if [[ -n "$MAX_FILES" ]] && [[ $current_file -ge $MAX_FILES ]]; then
+        if [[ "$VERBOSE" == true ]]; then
+            print_info "Reached limit of $MAX_FILES files, stopping processing"
+        fi
+        log_message "Reached limit of $MAX_FILES files, stopping processing"
+        break
     fi
     
     ((total_files++))
@@ -652,26 +726,35 @@ for file in "${files_to_process[@]}"; do
         set_exif_remark "$file" "$SET_REMARK" "$DRY_RUN"
     fi
 
-    # Copy to STAGE1 (flat backup)
+    # Copy to STAGE1 (flat backup) - only if STAGE1_DIR is configured
     stage1_success=false
     stage2_success=false
     STAGE1_DEST_PATH=""
     STAGE2_DEST_PATH=""
 
-    copy_to_stage1 "$file"
-    stage1_result=$?
-    
-    if [[ $stage1_result -eq 0 ]]; then
-        stage1_success=true
-    elif [[ $stage1_result -eq 2 ]]; then
-        # Skipped in STAGE1 (already exists)
-        stage1_success=false
-        ((skipped_files++))
+    if [[ -n "$STAGE1_DIR" ]]; then
+        copy_to_stage1 "$file"
+        stage1_result=$?
+        
+        if [[ $stage1_result -eq 0 ]]; then
+            stage1_success=true
+        elif [[ $stage1_result -eq 2 ]]; then
+            # Skipped in STAGE1 (already exists)
+            stage1_success=false
+            ((skipped_files++))
+        elif [[ $stage1_result -eq 3 ]]; then
+            # STAGE1 not configured - this shouldn't happen if we check above, but handle it
+            stage1_success=false
+        else
+            # Failed to copy to STAGE1
+            stage1_success=false
+            ((failed_files++))
+            log_message "ERROR: Failed to copy to STAGE1: '$file'"
+        fi
     else
-        # Failed to copy to STAGE1
-        stage1_success=false
-        ((failed_files++))
-        log_message "ERROR: Failed to copy to STAGE1: '$file'"
+        # STAGE1 not configured - mark as not provided
+        STAGE1_DEST_PATH="Not provided"
+        stage1_result=3
     fi
     
     # Copy to STAGE2 (with optional organization)
@@ -686,19 +769,35 @@ for file in "${files_to_process[@]}"; do
             ((verified_files++))
         fi
         
-        # Move mode: delete source file after successful copy to both stages
+        # Move mode: delete source file after successful copy to STAGE2 (and STAGE1 if configured)
         if [[ "$MOVE_MODE" == true ]]; then
-            if [[ "$DRY_RUN" == true ]]; then
-                print_info "Would move (delete source): '$file'"
-                log_message "DRY RUN: Would move (delete source) '$file'"
+            # Only delete source if STAGE2 succeeded and (STAGE1 succeeded or STAGE1 not configured)
+            should_delete=false
+            if [[ -n "$STAGE1_DIR" ]]; then
+                # STAGE1 is configured - require both stages to succeed
+                if [[ $stage1_result -eq 0 ]] && [[ $stage2_result -eq 0 ]]; then
+                    should_delete=true
+                fi
             else
-                if rm -f "$file"; then
-                    print_success "Moved (deleted source): '$file'"
-                    log_message "MOVED: Deleted source file '$file' after successful copy to both stages"
+                # STAGE1 not configured - only require STAGE2 to succeed
+                if [[ $stage2_result -eq 0 ]]; then
+                    should_delete=true
+                fi
+            fi
+            
+            if [[ "$should_delete" == true ]]; then
+                if [[ "$DRY_RUN" == true ]]; then
+                    print_info "Would move (delete source): '$file'"
+                    log_message "DRY RUN: Would move (delete source) '$file'"
                 else
-                    print_error "Failed to delete source file: '$file'"
-                    log_message "ERROR: Failed to delete source file '$file'"
-                    ((failed_files++))
+                    if rm -f "$file"; then
+                        print_success "Moved (deleted source): '$file'"
+                        log_message "MOVED: Deleted source file '$file' after successful copy"
+                    else
+                        print_error "Failed to delete source file: '$file'"
+                        log_message "ERROR: Failed to delete source file '$file'"
+                        ((failed_files++))
+                    fi
                 fi
             fi
         fi
@@ -726,10 +825,14 @@ for file in "${files_to_process[@]}"; do
         remark=$(get_exif_remark "$file")
         [[ -z "$remark" ]] && remark=""
         
-        # Set STAGE1 path (use "Skipped" if not set or empty)
-        stage1_path="${STAGE1_DEST_PATH:-Skipped}"
-        if [[ -z "$stage1_path" ]]; then
-            stage1_path="Skipped"
+        # Set STAGE1 path (use "Not provided" if STAGE1_DIR not configured, "Skipped" if skipped, or path if copied)
+        if [[ -z "$STAGE1_DIR" ]]; then
+            stage1_path="Not provided"
+        else
+            stage1_path="${STAGE1_DEST_PATH:-Skipped}"
+            if [[ -z "$stage1_path" ]]; then
+                stage1_path="Skipped"
+            fi
         fi
         
         # Set STAGE2 path (use "Skipped" if not set or empty)
