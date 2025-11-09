@@ -2,10 +2,15 @@
 
 # modify_time_avi.sh
 # Modifies EXIF timestamps for AVI files based on filename
-# Usage: modify_time_avi.sh [--dry-run]
+# Usage: modify_time_avi.sh [--dry-run] [file_pattern]
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the directory where this script is located (handle symlinks)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if [[ -L "$SCRIPT_PATH" ]]; then
+    # Resolve symlink to actual file
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 
 # Load modules
 source "$SCRIPT_DIR/module/load_modules.sh"
@@ -15,14 +20,18 @@ DRY_RUN=false
 PATTERN="*.AVI"
 
 # Parse command line arguments
-if [[ "$1" == "--dry-run" ]]; then
-    DRY_RUN=true
-    shift
-fi
-
-if [[ -n "$1" ]]; then
-    PATTERN="$1"
-fi
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        *)
+            PATTERN="$1"
+            shift
+            ;;
+    esac
+done
 
 # Check for exiftool
 if ! check_exiftool; then

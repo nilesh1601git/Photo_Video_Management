@@ -89,7 +89,30 @@ get_date_path_from_exif() {
     return 1
 }
 
+# Function to validate if a date string is valid (not 0000:00:00 00:00:00 or similar invalid dates)
+# Returns: 0 if valid, 1 if invalid
+is_valid_date() {
+    local date_str="$1"
+    
+    if [[ -z "$date_str" ]]; then
+        return 1
+    fi
+    
+    # Check for invalid date patterns: 0000:00:00, 0000-00-00, etc.
+    if [[ "$date_str" =~ ^0{4}[:/-]0{2}[:/-]0{2} ]]; then
+        return 1
+    fi
+    
+    # Check if it contains only zeros for date part
+    if [[ "$date_str" =~ ^0{4} ]]; then
+        return 1
+    fi
+    
+    return 0
+}
+
 # Function to get CreateDate from EXIF
+# Returns valid CreateDate or empty string if not found/invalid
 get_exif_createdate() {
     local file="$1"
     
@@ -97,7 +120,15 @@ get_exif_createdate() {
         return 1
     fi
     
-    exiftool -s -s -s -CreateDate "$file" 2>/dev/null
+    local created=$(exiftool -s -s -s -CreateDate "$file" 2>/dev/null)
+    
+    # Validate the date - reject invalid dates like 0000:00:00 00:00:00
+    if [[ -n "$created" ]] && is_valid_date "$created"; then
+        echo "$created"
+        return 0
+    fi
+    
+    return 1
 }
 
 # Function to get all date-related EXIF tags as a pipe-separated string
@@ -136,44 +167,201 @@ get_all_date_tags() {
     echo "${datetime_original}|${create_date}|${modify_date}|${file_modify_date}|${datetime}|${date_created}|${date_modified}"
 }
 
+# Function to get the oldest file stat date when no EXIF tags are available
+# Returns: YYYY:MM:DD HH:MM:SS format on success, empty string on failure
+get_oldest_file_stat_date() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    # Get File* dates using exiftool
+    local file_modify_date=$(exiftool -s -s -s -FileModifyDate "$file" 2>/dev/null)
+    local file_access_date=$(exiftool -s -s -s -FileAccessDate "$file" 2>/dev/null)
+    local file_inode_change_date=$(exiftool -s -s -s -FileInodeChangeDate "$file" 2>/dev/null)
+    
+    # Find oldest date
+    local oldest_date=""
+    local oldest_timestamp=9999999999
+    
+    if [[ -n "$file_modify_date" ]]; then
+        local ts=$(date_to_timestamp "$file_modify_date")
+        if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+            oldest_timestamp=$ts
+            oldest_date="$file_modify_date"
+        fi
+    fi
+    
+    if [[ -n "$file_access_date" ]]; then
+        local ts=$(date_to_timestamp "$file_access_date")
+        if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+            oldest_timestamp=$ts
+            oldest_date="$file_access_date"
+        fi
+    fi
+    
+    if [[ -n "$file_inode_change_date" ]]; then
+        local ts=$(date_to_timestamp "$file_inode_change_date")
+        if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+            oldest_timestamp=$ts
+            oldest_date="$file_inode_change_date"
+        fi
+    fi
+    
+    if [[ -n "$oldest_date" ]]; then
+        echo "$oldest_date"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Function to check if file has any EXIF date tags (not just File* tags)
+# Returns: 0 if EXIF tags exist, 1 otherwise
+has_exif_date_tags() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    # Check for EXIF, Composite, IPTC, XMP, or ICC_Profile date tags
+    local has_exif=$(exiftool -s -G -time:all -date:all "$file" 2>/dev/null | grep -iE "(date|time)" | grep -v "^$" | grep -v -iE "SubSecTime(Original|Digitized)" | grep -E "^\[EXIF\]|^\[Composite\]|^\[IPTC\]|^\[XMP\]|^\[ICC_Profile\]" | head -1)
+    
+    if [[ -n "$has_exif" ]]; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# Function to check if file has any valid EXIF date tags (not just File* tags, and not invalid dates like 0000:00:00)
+# Returns: 0 if valid EXIF tags exist, 1 otherwise
+has_valid_exif_date_tags() {
+    local file="$1"
+    
+    if ! check_exiftool; then
+        return 1
+    fi
+    
+    # Get all EXIF date tags and check if any are valid
+    local exif_tags=$(exiftool -s -G -time:all -date:all "$file" 2>/dev/null | grep -iE "(date|time)" | grep -v "^$" | grep -v -iE "SubSecTime(Original|Digitized)" | grep -E "^\[EXIF\]|^\[Composite\]|^\[IPTC\]|^\[XMP\]|^\[ICC_Profile\]|^\[QuickTime\]")
+    
+    if [[ -z "$exif_tags" ]]; then
+        return 1
+    fi
+    
+    # Check if any of the tags have valid dates (not 0000:00:00)
+    while IFS= read -r line; do
+        # Extract the date value (everything after the colon)
+        local date_value=$(echo "$line" | sed 's/.*:[[:space:]]*//')
+        if [[ -n "$date_value" ]] && is_valid_date "$date_value"; then
+            return 0
+        fi
+    done <<< "$exif_tags"
+    
+    return 1
+}
+
 # Function to format EXIF CreateDate to YYYYMMDD_HHMMSS format
-# For video files, uses ffprobe to get creation_time
+# For MP4 files, uses exiftool first, then falls back to ffprobe
+# For other video files, uses ffprobe first, then falls back to exiftool
+# If no EXIF tags exist, uses oldest file stat date (FileModifyDate, FileAccessDate, FileInodeChangeDate)
 # Returns: YYYYMMDD_HHMMSS format on success, empty string on failure
 format_exif_date_to_filename() {
     local file="$1"
     local created=""
+    local ext="${file##*.}"
+    local ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
     
     # Check if it's a video file
     if is_video_file "$file"; then
-        # Use ffprobe for video files to get creation_time
-        if check_ffprobe; then
-            # Try format_tags=creation_time first (metadata)
-            created=$(ffprobe -v quiet -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
-            
-            # If not found, try format=creation_time (container level)
-            if [[ -z "$created" ]]; then
-                created=$(ffprobe -v quiet -show_entries format=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
+        # For MP4 files, use exiftool first
+        if [[ "$ext_lower" == "mp4" ]] || [[ "$ext_lower" == "m4v" ]]; then
+            # Try exiftool first for MP4/M4V files
+            created=$(get_exif_createdate "$file")
+            # Validate the date if we got one
+            if [[ -n "$created" ]] && ! is_valid_date "$created"; then
+                created=""
             fi
             
-            # Remove any leading/trailing whitespace
-            created=$(echo "$created" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            # If exiftool didn't work, fall back to ffprobe
+            if [[ -z "$created" ]] && check_ffprobe; then
+                # Try format_tags=creation_time first (metadata)
+                created=$(ffprobe -v quiet -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
+                
+                # If not found, try format=creation_time (container level)
+                if [[ -z "$created" ]]; then
+                    created=$(ffprobe -v quiet -show_entries format=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
+                fi
+                
+                # Remove any leading/trailing whitespace
+                created=$(echo "$created" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                
+                # Convert ISO 8601 format to YYYY:MM:DD HH:MM:SS
+                # Handles formats like: 2015-05-24T08:51:40.000000Z, 2015-05-24 08:51:40, or 2015-05-24T08:51:40
+                if [[ -n "$created" ]]; then
+                    # Replace T with space, remove microseconds and timezone
+                    created=$(echo "$created" | sed 's/T/ /' | sed 's/\.[0-9]*//' | sed 's/[Z+-].*$//')
+                    # Convert YYYY-MM-DD HH:MM:SS to YYYY:MM:DD HH:MM:SS
+                    if [[ $created =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})[[:space:]]+([0-9]{2}):([0-9]{2}):([0-9]{2}) ]]; then
+                        created="${BASH_REMATCH[1]}:${BASH_REMATCH[2]}:${BASH_REMATCH[3]} ${BASH_REMATCH[4]}:${BASH_REMATCH[5]}:${BASH_REMATCH[6]}"
+                    fi
+                fi
+            fi
+        else
+            # For other video files (AVI, MOV, etc.), use ffprobe first
+            if check_ffprobe; then
+                # Try format_tags=creation_time first (metadata)
+                created=$(ffprobe -v quiet -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
+                
+                # If not found, try format=creation_time (container level)
+                if [[ -z "$created" ]]; then
+                    created=$(ffprobe -v quiet -show_entries format=creation_time -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -1)
+                fi
+                
+                # Remove any leading/trailing whitespace
+                created=$(echo "$created" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                
+                # Convert ISO 8601 format to YYYY:MM:DD HH:MM:SS
+                # Handles formats like: 2015-05-24T08:51:40.000000Z, 2015-05-24 08:51:40, or 2015-05-24T08:51:40
+                if [[ -n "$created" ]]; then
+                    # Replace T with space, remove microseconds and timezone
+                    created=$(echo "$created" | sed 's/T/ /' | sed 's/\.[0-9]*//' | sed 's/[Z+-].*$//')
+                    # Convert YYYY-MM-DD HH:MM:SS to YYYY:MM:DD HH:MM:SS
+                    if [[ $created =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})[[:space:]]+([0-9]{2}):([0-9]{2}):([0-9]{2}) ]]; then
+                        created="${BASH_REMATCH[1]}:${BASH_REMATCH[2]}:${BASH_REMATCH[3]} ${BASH_REMATCH[4]}:${BASH_REMATCH[5]}:${BASH_REMATCH[6]}"
+                    fi
+                fi
+            fi
             
-            # Convert ISO 8601 format to YYYY:MM:DD HH:MM:SS
-            # Handles formats like: 2015-05-24T08:51:40.000000Z, 2015-05-24 08:51:40, or 2015-05-24T08:51:40
-            if [[ -n "$created" ]]; then
-                # Replace T with space, remove microseconds and timezone
-                created=$(echo "$created" | sed 's/T/ /' | sed 's/\.[0-9]*//' | sed 's/[Z+-].*$//')
-                # Convert YYYY-MM-DD HH:MM:SS to YYYY:MM:DD HH:MM:SS
-                if [[ $created =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})[[:space:]]+([0-9]{2}):([0-9]{2}):([0-9]{2}) ]]; then
-                    created="${BASH_REMATCH[1]}:${BASH_REMATCH[2]}:${BASH_REMATCH[3]} ${BASH_REMATCH[4]}:${BASH_REMATCH[5]}:${BASH_REMATCH[6]}"
+            # Fall back to exiftool if ffprobe didn't work
+            if [[ -z "$created" ]]; then
+                created=$(get_exif_createdate "$file")
+                # Validate the date if we got one
+                if [[ -n "$created" ]] && ! is_valid_date "$created"; then
+                    created=""
                 fi
             fi
         fi
+    else
+        # For image files, use EXIF CreateDate
+        created=$(get_exif_createdate "$file")
+        # Validate the date if we got one
+        if [[ -n "$created" ]] && ! is_valid_date "$created"; then
+            created=""
+        fi
     fi
     
-    # For image files or if video date extraction failed, use exiftool
+    # If no valid EXIF CreateDate found, check if there are any valid EXIF tags at all
+    # If no valid EXIF tags exist, use oldest file stat date
     if [[ -z "$created" ]]; then
-        created=$(get_exif_createdate "$file")
+        # Check if there are any valid EXIF date tags (not just invalid ones like 0000:00:00)
+        if ! has_valid_exif_date_tags "$file"; then
+            # No valid EXIF tags found, use oldest file stat date
+            created=$(get_oldest_file_stat_date "$file")
+        fi
     fi
     
     if [[ -z "$created" ]]; then
@@ -181,8 +369,9 @@ format_exif_date_to_filename() {
     fi
     
     # Format date: YYYYMMDD_HHMMSS
-    # Input format is typically: YYYY:MM:DD HH:MM:SS
-    local formatted=$(echo "$created" | sed 's/[: ]//g' | cut -c1-15 | sed 's/\(........\)\(......\)/\1_\2/')
+    # Input format is typically: YYYY:MM:DD HH:MM:SS or YYYY:MM:DD HH:MM:SS+timezone
+    # Use format_date_to_yyyymmdd_hhmmss for proper formatting
+    local formatted=$(format_date_to_yyyymmdd_hhmmss "$created")
     
     if [[ -z "$formatted" ]] || [[ ! $formatted =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
         return 1
@@ -228,7 +417,7 @@ format_date_to_yyyymmdd_hhmmss() {
 }
 
 # Function to modify EXIF timestamps from filename
-# Expects filename format: YYYYMMDD_HHMMSS.ext
+# Expects filename format: YYYYMMDD_HHMMSS.ext or PREFIX_YYYYMMDD_HHMMSS.ext (e.g., VID_20161010_231520.mp4)
 # Usage: modify_exif_timestamp_from_filename <file> [dry_run]
 modify_exif_timestamp_from_filename() {
     local file="$1"
@@ -242,10 +431,23 @@ modify_exif_timestamp_from_filename() {
     local base=$(basename "$file")
     local name="${base%.*}"
     
-    # Match YYYYMMDD_HHMMSS or YYYYMMDD_HHMMSS_XXX
+    local date_part=""
+    local time_part=""
+    
+    # Match patterns:
+    # 1. YYYYMMDD_HHMMSS or YYYYMMDD_HHMMSS_XXX (original pattern)
+    # 2. PREFIX_YYYYMMDD_HHMMSS (e.g., VID_20161010_231520, IMG_20161010_231520)
     if [[ $name =~ ^([0-9]{8})_([0-9]{6})(_[0-9]{3})?$ ]]; then
-        local date_part="${BASH_REMATCH[1]}"
-        local time_part="${BASH_REMATCH[2]}"
+        # Pattern 1: Direct YYYYMMDD_HHMMSS
+        date_part="${BASH_REMATCH[1]}"
+        time_part="${BASH_REMATCH[2]}"
+    elif [[ $name =~ _([0-9]{8})_([0-9]{6})(_[0-9]{3})?$ ]]; then
+        # Pattern 2: PREFIX_YYYYMMDD_HHMMSS (e.g., VID_20161010_231520)
+        date_part="${BASH_REMATCH[1]}"
+        time_part="${BASH_REMATCH[2]}"
+    fi
+    
+    if [[ -n "$date_part" ]] && [[ -n "$time_part" ]]; then
         
         # Format as: YYYY:MM:DD HH:MM:SS
         local ts="${date_part:0:4}:${date_part:4:2}:${date_part:6:2} ${time_part:0:2}:${time_part:2:2}:${time_part:4:2}"
@@ -280,7 +482,7 @@ modify_exif_timestamp_from_filename() {
             return 1
         fi
     else
-        print_warning "Skipping '$file' (filename doesn't match expected format YYYYMMDD_HHMMSS)"
+        print_warning "Skipping '$file' (filename doesn't match expected format YYYYMMDD_HHMMSS or PREFIX_YYYYMMDD_HHMMSS)"
         return 1
     fi
 }
@@ -323,8 +525,22 @@ get_best_available_date() {
     return 1
 }
 
+# Function to convert exiftool date format to Unix timestamp for comparison
+# Input: exiftool date format (e.g., "2009:07:31 22:05:48+05:30")
+# Returns: Unix timestamp
+date_to_timestamp() {
+    local date_str="$1"
+    # Remove timezone offset and convert to format that date can parse
+    # Handle formats like "2009:07:31 22:05:48+05:30" or "2009:07:31 22:05:48"
+    # Convert "2009:07:31 22:05:48+05:30" to "2009-07-31 22:05:48"
+    local clean_date=$(echo "$date_str" | sed 's/+[0-9][0-9]:[0-9][0-9]$//' | sed 's/-[0-9][0-9]:[0-9][0-9]$//' | sed 's/:/-/' | sed 's/:/-/' | sed 's/ / /')
+    # Convert YYYY-MM-DD HH:MM:SS to Unix timestamp
+    date -d "$clean_date" +%s 2>/dev/null || echo "0"
+}
+
 # Function to display all date-related EXIF tags
 # Shows all date/time fields available in the file
+# If no EXIF tags are found (only File* tags), uses the oldest file stat date
 display_all_date_tags() {
     local file="$1"
     
@@ -339,14 +555,112 @@ display_all_date_tags() {
     exiftool -s -G -time:all -date:all "$file" 2>/dev/null | grep -iE "(date|time)" | grep -v "^$" | grep -v -iE "SubSecTime(Original|Digitized)" > "$temp_output" || true
     
     if [[ -s "$temp_output" ]]; then
-        print_info "Date-related EXIF tags for '$(basename "$file")':"
+        # Read all lines into an array for processing
+        local lines=()
         while IFS= read -r line; do
-            # Format the output nicely - remove leading spaces and show tag name and value
+            lines+=("$line")
+        done < "$temp_output"
+        
+        # Check if there are any EXIF tags (not just File* tags)
+        local has_exif_tags=false
+        local has_file_tags=false
+        local file_modify_date=""
+        local file_access_date=""
+        local file_inode_change_date=""
+        
+        for line in "${lines[@]}"; do
             local formatted_line=$(echo "$line" | sed 's/^[[:space:]]*//')
             if [[ -n "$formatted_line" ]]; then
-                echo "  $formatted_line"
+                # Check if it's an EXIF tag (not File tag)
+                if [[ "$formatted_line" =~ ^\[EXIF\]|^\[Composite\]|^\[IPTC\]|^\[XMP\]|^\[ICC_Profile\] ]]; then
+                    has_exif_tags=true
+                elif [[ "$formatted_line" =~ ^\[File\] ]]; then
+                    has_file_tags=true
+                    # Extract File* dates - get everything after the colon
+                    if [[ "$formatted_line" =~ FileModifyDate ]]; then
+                        file_modify_date=$(echo "$formatted_line" | sed 's/.*FileModifyDate[[:space:]]*:[[:space:]]*//')
+                    elif [[ "$formatted_line" =~ FileAccessDate ]]; then
+                        file_access_date=$(echo "$formatted_line" | sed 's/.*FileAccessDate[[:space:]]*:[[:space:]]*//')
+                    elif [[ "$formatted_line" =~ FileInodeChangeDate ]]; then
+                        file_inode_change_date=$(echo "$formatted_line" | sed 's/.*FileInodeChangeDate[[:space:]]*:[[:space:]]*//')
+                    fi
+                fi
             fi
-        done < "$temp_output"
+        done
+        
+        # If no EXIF tags found but File tags exist, use oldest file stat date
+        if [[ "$has_exif_tags" == false ]] && [[ "$has_file_tags" == true ]]; then
+            print_info "Date-related EXIF tags for '$(basename "$file")':"
+            
+            # Display all File tags and valid QuickTime tags (filter out invalid dates)
+            for line in "${lines[@]}"; do
+                local formatted_line=$(echo "$line" | sed 's/^[[:space:]]*//')
+                if [[ -n "$formatted_line" ]]; then
+                    # Extract the date value (everything after the colon)
+                    local date_value=$(echo "$formatted_line" | sed 's/.*:[[:space:]]*//')
+                    # Skip lines with invalid dates (0000:00:00 00:00:00)
+                    if [[ -n "$date_value" ]] && ! is_valid_date "$date_value"; then
+                        continue
+                    fi
+                    echo "  $formatted_line"
+                fi
+            done
+            
+            # Find oldest date from File tags
+            local oldest_date=""
+            local oldest_timestamp=9999999999
+            local oldest_tag=""
+            
+            if [[ -n "$file_modify_date" ]]; then
+                local ts=$(date_to_timestamp "$file_modify_date")
+                if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+                    oldest_timestamp=$ts
+                    oldest_date="$file_modify_date"
+                    oldest_tag="FileModifyDate"
+                fi
+            fi
+            
+            if [[ -n "$file_access_date" ]]; then
+                local ts=$(date_to_timestamp "$file_access_date")
+                if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+                    oldest_timestamp=$ts
+                    oldest_date="$file_access_date"
+                    oldest_tag="FileAccessDate"
+                fi
+            fi
+            
+            if [[ -n "$file_inode_change_date" ]]; then
+                local ts=$(date_to_timestamp "$file_inode_change_date")
+                if [[ $ts -lt $oldest_timestamp ]] && [[ $ts -gt 0 ]]; then
+                    oldest_timestamp=$ts
+                    oldest_date="$file_inode_change_date"
+                    oldest_tag="FileInodeChangeDate"
+                fi
+            fi
+            
+            if [[ -n "$oldest_date" ]]; then
+                echo ""
+                print_info "No EXIF date tags found. Using oldest file stat date:"
+                echo "  [File]          $oldest_tag                  : $oldest_date"
+            fi
+        else
+            # Normal case: display all tags (has EXIF tags or no tags at all)
+            # Filter out invalid dates (like 0000:00:00 00:00:00)
+            print_info "Date-related EXIF tags for '$(basename "$file")':"
+            for line in "${lines[@]}"; do
+                # Format the output nicely - remove leading spaces and show tag name and value
+                local formatted_line=$(echo "$line" | sed 's/^[[:space:]]*//')
+                if [[ -n "$formatted_line" ]]; then
+                    # Extract the date value (everything after the colon)
+                    local date_value=$(echo "$formatted_line" | sed 's/.*:[[:space:]]*//')
+                    # Skip lines with invalid dates (0000:00:00 00:00:00)
+                    if [[ -n "$date_value" ]] && ! is_valid_date "$date_value"; then
+                        continue
+                    fi
+                    echo "  $formatted_line"
+                fi
+            done
+        fi
     else
         print_warning "No date-related EXIF tags found for '$(basename "$file")'"
     fi

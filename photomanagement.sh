@@ -35,6 +35,7 @@ SET_REMARK=""
 GET_REMARK=false
 SHOW_REMARK=false
 MOVE_MODE=false
+SHOW_DATES=false  # Display date-related EXIF information only
 MAX_FILES=""  # Optional - limit number of files to process
 
 # Associative array to track per-timestamp counters for duplicate filenames in STAGE2
@@ -66,6 +67,7 @@ OPTIONS:
     --set-remark <text>    Set remark/comment for files (stored in EXIF ImageDescription and UserComment)
     --get-remark           Display remark/comment for files
     --show-remark          Show remarks when processing files
+    --show-dates           Display date-related EXIF information only (no copying)
     --move                 Move files instead of copying (delete source after successful copy to both stages)
     --limit <number>       Limit the number of files to process (useful for testing)
     -h, --help             Show this help message
@@ -113,6 +115,12 @@ EXAMPLES:
 
     # Process only first 10 files (useful for testing)
     $0 --source /path/to/photos --limit 10
+
+    # Display date-related EXIF information only (no copying)
+    $0 --show-dates --source /path/to/photos
+
+    # Display dates for specific pattern
+    $0 --show-dates --source /path/to/photos "*.jpg"
 
 WORKFLOW:
     1. Files are copied to STAGE1 maintaining original filenames (pristine backup) - OPTIONAL
@@ -184,6 +192,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_REMARK=true
             shift
             ;;
+        --show-dates)
+            SHOW_DATES=true
+            shift
+            ;;
         --move)
             MOVE_MODE=true
             shift
@@ -202,9 +214,9 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            # For get-remark mode, only set PATTERN from the first non-option argument
+            # For get-remark and show-dates modes, only set PATTERN from the first non-option argument
             # When glob expands (e.g., TEST_DATA/*), multiple args are passed but we only need the first
-            if [[ "$GET_REMARK" == true ]]; then
+            if [[ "$GET_REMARK" == true ]] || [[ "$SHOW_DATES" == true ]]; then
                 # Only set PATTERN if it's not already set (first argument)
                 if [[ -z "$PATTERN" ]] || [[ "$PATTERN" == "*" ]]; then
                     PATTERN="$1"
@@ -217,8 +229,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate source directory (skip if in get-remark mode, will be handled there)
-if [[ "$GET_REMARK" != true ]]; then
+# Validate source directory (skip if in get-remark or show-dates mode, will be handled there)
+if [[ "$GET_REMARK" != true ]] && [[ "$SHOW_DATES" != true ]]; then
     if [[ ! -d "$SOURCE_DIR" ]]; then
         print_error "Source directory '$SOURCE_DIR' does not exist."
         exit 1
@@ -226,8 +238,8 @@ if [[ "$GET_REMARK" != true ]]; then
 fi
 
 # Check for exiftool (required for STAGE2 renaming, setting/getting remarks, and EXIF operations)
-# Only check if not in get-remark-only mode (get-remark will check itself)
-if [[ "$GET_REMARK" != true ]]; then
+# Only check if not in get-remark-only or show-dates-only mode (they will check themselves)
+if [[ "$GET_REMARK" != true ]] && [[ "$SHOW_DATES" != true ]]; then
     if ! check_exiftool; then
         print_error "exiftool is required for STAGE2 file renaming but not found."
         print_info "Install it with: sudo apt-get install libimage-exiftool-perl (Debian/Ubuntu)"
@@ -239,6 +251,129 @@ fi
 # Initialize log file
 if [[ -n "$LOG_FILE" ]]; then
     set_log_file "$LOG_FILE"
+fi
+
+# Handle show-dates mode early (before creating directories and printing main messages)
+if [[ "$SHOW_DATES" == true ]]; then
+    # Check for exiftool
+    if ! check_exiftool; then
+        print_error "exiftool is required for displaying date information but not found."
+        print_info "Install it with: sudo apt-get install libimage-exiftool-perl (Debian/Ubuntu)"
+        print_info "Or: brew install exiftool (macOS)"
+        exit 1
+    fi
+    
+    # Handle pattern parsing similar to get-remark mode
+    if [[ "$PATTERN" == */* ]]; then
+        dir_part=$(dirname "$PATTERN")
+        pattern_part=$(basename "$PATTERN")
+        
+        # When glob expands (e.g., TEST_DATA/*), we want to process all files in the parent directory
+        # So if we see a path like TEST_DATA/IMG_0013.JPG or TEST_DATA/STAGE2, use TEST_DATA as source
+        if [[ -d "$dir_part" ]]; then
+            # Use the directory as source, and process all files in it
+            # This handles glob expansion: when TEST_DATA/* expands to multiple files,
+            # we process all files in TEST_DATA/ not just the first one
+            SOURCE_DIR="$dir_part"
+            PATTERN="*"
+        # Check if PATTERN itself is a directory
+        elif [[ -d "$PATTERN" ]]; then
+            SOURCE_DIR="$PATTERN"
+            PATTERN="*"
+        # Check if PATTERN is a file
+        elif [[ -f "$PATTERN" ]]; then
+            SOURCE_DIR="$dir_part"
+            PATTERN="$pattern_part"
+        fi
+    # If PATTERN doesn't have a path, check if SOURCE_DIR is a file
+    elif [[ -f "$SOURCE_DIR" ]]; then
+        file_path="$SOURCE_DIR"
+        SOURCE_DIR="$(dirname "$file_path")"
+        PATTERN="$(basename "$file_path")"
+    fi
+    
+    # Normalize source directory path
+    if [[ ! -d "$SOURCE_DIR" ]]; then
+        print_error "Source directory '$SOURCE_DIR' does not exist."
+        exit 1
+    fi
+    SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
+    
+    print_info "Displaying date-related EXIF information for files in: $SOURCE_DIR"
+    print_info "Pattern: $PATTERN"
+    echo ""
+    
+    # Use a temporary file to avoid issues with set -e and process substitution
+    temp_file_list=$(mktemp)
+    find_files "$PATTERN" "$SOURCE_DIR" > "$temp_file_list" || true
+    mapfile -t found_files < "$temp_file_list"
+    rm -f "$temp_file_list"
+    
+    files_with_dates=0
+    files_without_dates=0
+    processed_count=0
+    
+    # Set progress mode flag so print functions clear progress bar
+    if [[ "$SHOW_PROGRESS" == true ]]; then
+        IN_PROGRESS_MODE=true
+    fi
+    
+    for file in "${found_files[@]}"; do
+        if [[ -z "$file" ]]; then
+            continue
+        fi
+        
+        # Check limit if set
+        if [[ -n "$MAX_FILES" ]] && [[ $processed_count -ge $MAX_FILES ]]; then
+            break
+        fi
+        
+        # Update progress bar if enabled (before displaying date tags)
+        if [[ "$SHOW_PROGRESS" == true ]]; then
+            total_count=${#found_files[@]}
+            if [[ -n "$MAX_FILES" ]] && [[ $total_count -gt $MAX_FILES ]]; then
+                total_count=$MAX_FILES
+            fi
+            show_progress_bar "$((processed_count + 1))" "$total_count" "$(basename "$file")"
+        fi
+        
+        # Clear progress bar before displaying date tags
+        if [[ "$SHOW_PROGRESS" == true ]]; then
+            clear_progress_if_needed
+        fi
+        
+        # Display date-related EXIF tags
+        if display_all_date_tags "$file"; then
+            ((files_with_dates++))
+        else
+            ((files_without_dates++))
+        fi
+        
+        ((processed_count++))
+        echo ""  # Add blank line between files
+    done
+    
+    # Clear progress bar if it was shown
+    if [[ "$SHOW_PROGRESS" == true ]]; then
+        clear_progress_if_needed
+    fi
+    
+    echo ""
+    print_info "========================================="
+    print_info "DATE INFORMATION SUMMARY"
+    print_info "========================================="
+    if [[ -n "$MAX_FILES" ]] && [[ ${#found_files[@]} -gt $MAX_FILES ]] && [[ $processed_count -ge $MAX_FILES ]]; then
+        print_info "Total files processed: $processed_count (limited from ${#found_files[@]})"
+    else
+        print_info "Total files processed: $processed_count"
+    fi
+    print_success "Files with date information: $files_with_dates"
+    if [[ $files_without_dates -gt 0 ]]; then
+        print_warning "Files without date information: $files_without_dates"
+    fi
+    print_info "========================================="
+    
+    exit 0
 fi
 
 # Initialize structured log file (CSV format)
@@ -354,10 +489,56 @@ copy_to_stage2() {
         display_exif_remark "$src_file"
     fi
 
+    # Try to get new filename from EXIF CreateDate first (needed for duplicate check)
+    local exif_formatted_date=$(format_exif_date_to_filename "$src_file")
+    
     # Check if a file with matching checksum already exists in STAGE2
     # This prevents creating duplicate files with different names (e.g., _001 suffix)
     local existing_file=$(find_file_with_matching_checksum "$src_file" "$dest_base_dir")
     if [[ -n "$existing_file" ]]; then
+        local existing_basename=$(basename "$existing_file")
+        local existing_name="${existing_basename%.*}"
+        
+        # Check if the existing file has an invalid date pattern (00000000_000000)
+        # If so, we should rename it to the correct name
+        if [[ "$existing_name" =~ ^0{8}_0{6} ]]; then
+            # Existing file has invalid date pattern - we should rename it
+            if [[ -n "$exif_formatted_date" ]]; then
+                # We have a valid date, rename the existing file
+                local ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+                local correct_filename="${exif_formatted_date}.${ext_lower}"
+                local correct_path="$dest_base_dir/$correct_filename"
+                
+                # Check if the correct filename already exists (different file)
+                if [[ -e "$correct_path" ]] && [[ "$correct_path" != "$existing_file" ]]; then
+                    # Correct filename exists but is different file - handle duplicate
+                    local base_name="${exif_formatted_date}"
+                    local counter=1
+                    while [[ -e "$dest_base_dir/${base_name}_$(printf "%03d" $counter).${ext_lower}" ]]; do
+                        ((counter++))
+                    done
+                    correct_filename="${base_name}_$(printf "%03d" $counter).${ext_lower}"
+                    correct_path="$dest_base_dir/$correct_filename"
+                fi
+                
+                if [[ "$DRY_RUN" == false ]]; then
+                    mv "$existing_file" "$correct_path" 2>/dev/null
+                    if [[ $? -eq 0 ]]; then
+                        print_info "Renamed incorrectly named file: '$existing_basename' → '$correct_filename'"
+                        log_message "RENAME: Renamed incorrectly named file '$existing_basename' → '$correct_filename'"
+                        STAGE2_DEST_PATH="$correct_path"
+                        return 0
+                    fi
+                else
+                    print_info "Would rename incorrectly named file: '$existing_basename' → '$correct_filename'"
+                    log_message "DRY RUN: Would rename '$existing_basename' → '$correct_filename'"
+                    STAGE2_DEST_PATH="$correct_path"
+                    return 0
+                fi
+            fi
+        fi
+        
+        # Normal case: file exists with valid name, skip
         if [[ "$VERBOSE" == true ]]; then
             print_info "Skipping STAGE2 '$src_file' - identical file already exists: '$existing_file' (checksum match)"
         fi
@@ -369,8 +550,11 @@ copy_to_stage2() {
         return 2
     fi
 
-    # Try to get new filename from EXIF CreateDate
-    local exif_formatted_date=$(format_exif_date_to_filename "$src_file")
+    # Try to get new filename from EXIF CreateDate (if not already done above)
+    if [[ -z "$exif_formatted_date" ]]; then
+        exif_formatted_date=$(format_exif_date_to_filename "$src_file")
+    fi
+    
     if [[ -n "$exif_formatted_date" ]]; then
         # Format extension to lowercase
         local ext_lower=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
@@ -637,7 +821,7 @@ if [[ "$GET_REMARK" == true ]]; then
     exit 0
 fi
 
-# Normalize source directory path (for non-get-remark mode)
+# Normalize source directory path (for non-get-remark and non-show-dates mode)
 SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
 
 # Counter for statistics
