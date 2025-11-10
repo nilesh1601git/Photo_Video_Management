@@ -1,35 +1,34 @@
-# Photo Management Scripts
+# Photo Management Script
 
-A comprehensive set of bash scripts for managing, copying, and organizing photos and videos while preserving timestamps and metadata.
+A comprehensive bash script for managing, copying, and organizing photos and videos while preserving timestamps and metadata. Files are automatically renamed to a standardized format based on EXIF CreateDate.
 
-## Scripts Overview
+## Script Overview
 
-### 1. `photomanagement.sh` - Main Photo Copy & Organization Script
+### `photomanagement.sh` - Main Photo Copy & Organization Script
 
-The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 (organized working copy) directories with advanced features.
+The primary script for copying photos/videos to STAGE2 directory with automatic renaming and advanced features.
 
 **Key Concept:**
-- **STAGE1**: Pristine backup with original filenames (no organization) - for safety
-- **STAGE2**: Working copy with optional date organization - for operations and browsing
+- **STAGE2**: Working copy with files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
+- **Flat Structure**: All files stored in a single directory (no subdirectories)
+- **Automatic Renaming**: Files are renamed based on EXIF CreateDate for consistent naming
 
 #### Features
 
-✅ **Dual Stage Backup**: Copies files to both STAGE1 (flat) and STAGE2 (organized) directories   
-✅ **STAGE1 - Flat Backup**: Pristine backup with original filenames, no organization   
-✅ **STAGE2 - Organized Copy**: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate   
-✅ **STAGE2 Renaming**: Automatic renaming based on EXIF CreateDate with filename fallback   
-✅ **Timestamp Preservation**: Maintains original file modification times in both stages   
-✅ **Date-Based Organization**: Organize STAGE2 files into YYYY/MM subdirectories (optional)   
-✅ **EXIF Metadata Support**: Extract dates from EXIF data for STAGE2 organization and renaming (requires exiftool)   
-✅ **File Verification**: MD5 checksum verification of STAGE2 files   
-✅ **Progress Reporting**: Visual progress bar for large batches with real-time updates   
-✅ **Detailed Logging**: Create comprehensive log files with timestamps   
-✅ **Dry Run Mode**: Preview operations without making changes   
-✅ **Smart Duplicate Handling**: Checksum-based duplicate detection - skip identical files, backup different ones   
-✅ **Move Mode**: Move files instead of copying (delete source after successful copy to both stages)   
-✅ **Remark Management**: Set, get, and display remarks/comments stored in EXIF ImageDescription and UserComment tags   
-✅ **Date Tag Display**: Show all date-related EXIF tags before copying to STAGE2   
-✅ **Multiple Format Support**: JPG, JPEG, PNG, AVI, MOV, MP4, M4V   
+✅ **Automatic Renaming**: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate  
+✅ **STAGE2 Copy**: Files copied to STAGE2 with standardized names  
+✅ **Timestamp Preservation**: Maintains original file modification times  
+✅ **EXIF Metadata Support**: Extract dates from EXIF data for renaming (requires exiftool)  
+✅ **File Verification**: MD5 checksum verification of copied files  
+✅ **Progress Reporting**: Visual progress bar for large batches with real-time updates  
+✅ **Detailed Logging**: Create comprehensive log files with timestamps  
+✅ **Structured Logging**: CSV format log with filename mappings and date tags  
+✅ **Smart Duplicate Handling**: Checksum-based duplicate detection - skip identical files  
+✅ **Move Mode**: Move files instead of copying (delete source after successful copy)  
+✅ **Remark Management**: Set, get, and display remarks/comments stored in EXIF ImageDescription and UserComment tags  
+✅ **Date Tag Display**: Show all date-related EXIF tags  
+✅ **Multiple Format Support**: JPG, JPEG, PNG, AVI, MOV, MP4, M4V  
+✅ **Modular Architecture**: Reusable modules in `module/` directory  
 
 #### Usage
 
@@ -41,57 +40,36 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 
 | Option | Description |
 |--------|-------------|
-| `--dry-run` | Show what would be copied without actually copying |
 | `--source <dir>` | Source directory (default: current directory) |
-| `--stage1 <dir>` | STAGE1 destination - flat backup (default: ./STAGE1) |
-| `--stage2 <dir>` | STAGE2 destination - organized copy (default: ./STAGE2) |
-| `--organize-by-date` | Organize STAGE2 files into YYYY/MM subdirectories |
-| `--use-exif-date` | Use EXIF date for STAGE2 organization (requires exiftool) |
-| `--verify` | Verify STAGE2 copied files using MD5 checksums |
+| `--stage2 <dir>` | STAGE2 destination (default: ./STAGE2) |
+| `--verify` | Verify copied files using MD5 checksums |
 | `--log <file>` | Write detailed log to specified file |
-| `--progress` | Show progress bar during copy operations |
+| `--structured-log <file>` | Write structured CSV log with filename mappings and date tags |
+| `--progress` | Show progress bar during copy operations (always enabled) |
 | `--quiet` | Suppress verbose output |
 | `--set-remark <text>` | Set remark/comment for files (stored in EXIF ImageDescription and UserComment) |
 | `--get-remark` | Display remark/comment for files |
 | `--show-remark` | Show remarks when processing files |
-| `--move` | Move files instead of copying (delete source after successful copy to both stages) |
+| `--show-dates` | Display date-related EXIF information only (no copying) |
+| `--move` | Move files instead of copying (delete source after successful copy to STAGE2) |
+| `--limit <number>` | Limit the number of files to process (useful for testing) |
 | `-h, --help` | Show help message |
 
 #### Examples
 
-**Basic copy to STAGE1 and STAGE2:**
+**Basic copy to STAGE2:**
 ```bash
-./photomanagement.sh
+./photomanagement.sh --source /path/to/photos
 ```
 
-**Dry run to preview operations:**
+**Copy with verification:**
 ```bash
-./photomanagement.sh --dry-run
-```
-
-**Copy from specific source with custom destinations:**
-```bash
-./photomanagement.sh --source /path/to/photos --stage1 /backup/STAGE1 --stage2 /backup/STAGE2
-```
-
-**Copy to STAGE1 (flat) and organize STAGE2 by date from filename:**
-```bash
-./photomanagement.sh --organize-by-date "*.JPG"
-```
-
-**Copy to STAGE1 (flat) and organize STAGE2 by EXIF date with verification:**
-```bash
-./photomanagement.sh --organize-by-date --use-exif-date --verify
+./photomanagement.sh --verify --source /path/to/photos
 ```
 
 **Full featured backup with logging:**
 ```bash
-./photomanagement.sh --organize-by-date --use-exif-date --verify --log backup.log --progress
-```
-
-**Copy only specific date pattern:**
-```bash
-./photomanagement.sh --organize-by-date "20231225_*.jpg"
+./photomanagement.sh --verify --log backup.log --progress --source /path/to/photos
 ```
 
 **Set remark for all files:**
@@ -99,11 +77,10 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 ./photomanagement.sh --set-remark "Family vacation 2024" --source /path/to/photos
 ```
 
-**Display remarks for files:**
+**Display remarks for all files:**
 ```bash
 ./photomanagement.sh --get-remark --source /path/to/photos
 ./photomanagement.sh --get-remark --source /path/to/photos "*.jpg"
-./photomanagement.sh --get-remark TEST_DATA/*
 ```
 
 **Show remarks when processing files:**
@@ -114,86 +91,77 @@ The primary script for copying photos/videos to STAGE1 (flat backup) and STAGE2 
 **Move files instead of copying:**
 ```bash
 ./photomanagement.sh --move --source /path/to/photos
-./photomanagement.sh --move --organize-by-date --verify
+```
+
+**Process only first 10 files (useful for testing):**
+```bash
+./photomanagement.sh --source /path/to/photos --limit 10
+```
+
+**Display date-related EXIF information only (no copying):**
+```bash
+./photomanagement.sh --show-dates --source /path/to/photos
+./photomanagement.sh --show-dates --source /path/to/photos "*.jpg"
 ```
 
 **Complete workflow example (move with remark and verification):**
 ```bash
 ./photomanagement.sh \
-  --stage1 TEST_DATA/STAGE1 \
   --stage2 TEST_DATA/STAGE2 \
   --source TEST_DATA/ \
   --progress \
   --set-remark "Champaign Trip 2017" \
   --move \
-  --verify
+  --verify \
+  --structured-log mapping.csv
 ```
 This example:
-- Uses custom stage directories (TEST_DATA/STAGE1 and TEST_DATA/STAGE2)
+- Uses custom STAGE2 directory
 - Shows progress bar during processing
 - Sets a remark for all files ("Champaign Trip 2017")
 - Moves files (deletes source after successful copy)
 - Verifies copied files with MD5 checksums
+- Creates structured CSV log with filename mappings
 
-#### Date Organization
-
-**STAGE1** always maintains a flat structure (no organization, original filenames):
-```
-STAGE1/
-├── IMG_0013.JPG
-├── IMG_0018.JPG
-├── IMG_0049.JPG
-└── video.MOV
-```
-
-**STAGE2** files are renamed to YYYYMMDD_HHMMSS.ext format and can be organized by date when using `--organize-by-date`:
-
-Without `--organize-by-date` (flat structure):
-```
-STAGE2/
-├── 20231125_143022.jpg
-├── 20231125_143023.jpg
-├── 20231225_120000.jpg
-└── 20240101_000000.mp4
-```
-
-With `--organize-by-date` (organized by date):
-```
-STAGE2/
-├── 2023/
-│   ├── 11/
-│   │   ├── 20231125_143022.jpg
-│   │   └── 20231125_143023.jpg
-│   └── 12/
-│       ├── 20231225_120000.jpg
-│       └── 20231225_120001.jpg
-└── 2024/
-    └── 01/
-        └── 20240101_000000.mp4
-```
+#### File Renaming
 
 **STAGE2 Renaming:**
 - Files in STAGE2 are automatically renamed to `YYYYMMDD_HHMMSS.ext` format
 - Renaming priority: EXIF CreateDate → DateTimeOriginal → ModifyDate
-- Fallback: If no EXIF date, uses original filename (no renaming)
+- For video files: Uses ffprobe for MP4/M4V, falls back to exiftool for other formats
+- Fallback: If no EXIF date, uses oldest file stat date (FileModifyDate, FileAccessDate, FileInodeChangeDate)
+- If no date available: Uses original filename
 - Duplicate filenames get `_001`, `_002`, etc. suffix automatically
+- Extension is normalized to lowercase
 
-**Date Source Priority (for STAGE2 organization):**
-1. If `--use-exif-date` is specified: EXIF DateTimeOriginal → CreateDate → ModifyDate
-2. Fallback: Filename pattern (YYYYMMDD_HHMMSS)
-3. If no date found: Copy to STAGE2 root directory
+**Example:**
+```
+Source: IMG_1234.JPG (EXIF CreateDate: 2023:12:25 14:30:22)
+STAGE2: 20231225_143022.jpg
+```
+
+**Directory Structure:**
+```
+STAGE2/
+├── 20231225_143022.jpg
+├── 20231225_143023.jpg
+├── 20240101_000000.mp4
+└── 20240115_090000.jpg
+```
 
 **Duplicate Detection:**
 - Files are checked by MD5 checksum before copying
-- If an identical file (by checksum) already exists in STAGE1 or STAGE2, the file is skipped
+- If an identical file (by checksum) already exists in STAGE2, the file is skipped
 - Different files with same name are copied with `_001`, `_002` suffix
-- In move mode, source files are only deleted if successfully copied to both stages (not if skipped)
+- In move mode, source files are only deleted if successfully copied to STAGE2 (not if skipped)
 
 ---
 
 ### 2. `verify_stages.sh` - Stage Verification Script
 
 Verify that files in STAGE1 and STAGE2 are identical using MD5 checksums.
+
+**Note:** This script still references STAGE1 for backward compatibility, but the main script now only uses STAGE2.
 
 #### Features
 
@@ -252,7 +220,7 @@ Verify that files in STAGE1 and STAGE2 are identical using MD5 checksums.
 - `cp`, `mv`, `touch`, `stat` (standard Unix tools)
 - `md5sum` or `md5` (for verification)
 
-**For EXIF date support:**
+**For EXIF date support (required for renaming):**
 ```bash
 # Debian/Ubuntu
 sudo apt-get install libimage-exiftool-perl
@@ -262,6 +230,15 @@ brew install exiftool
 
 # Fedora/RHEL
 sudo dnf install perl-Image-ExifTool
+```
+
+**For video file support (optional, improves video date extraction):**
+```bash
+# Debian/Ubuntu
+sudo apt-get install ffmpeg
+
+# macOS
+brew install ffmpeg
 ```
 
 ### Setup
@@ -285,25 +262,14 @@ sudo ln -s $(pwd)/verify_stages.sh /usr/local/bin/verify-stages
 ### Complete Backup Workflow
 
 ```bash
-# 1. Dry run to preview
-./photomanagement.sh --dry-run --organize-by-date --use-exif-date
-
-# 2. Perform actual backup with all features
+# 1. Perform backup with all features
 ./photomanagement.sh \
   --source /media/camera/DCIM \
-  --stage1 /backup/STAGE1 \
   --stage2 /backup/STAGE2 \
-  --organize-by-date \
-  --use-exif-date \
   --verify \
   --log backup_$(date +%Y%m%d).log \
-  --progress
-
-# 3. Verify both stages match
-./verify_stages.sh \
-  --stage1 /backup/STAGE1 \
-  --stage2 /backup/STAGE2 \
-  --log verify_$(date +%Y%m%d).log
+  --progress \
+  --structured-log mapping_$(date +%Y%m%d).csv
 ```
 
 ### Move Workflow with Remarks
@@ -311,7 +277,6 @@ sudo ln -s $(pwd)/verify_stages.sh /usr/local/bin/verify-stages
 ```bash
 # Move files with remark, verification, and progress tracking
 ./photomanagement.sh \
-  --stage1 TEST_DATA/STAGE1 \
   --stage2 TEST_DATA/STAGE2 \
   --source TEST_DATA/ \
   --progress \
@@ -320,11 +285,11 @@ sudo ln -s $(pwd)/verify_stages.sh /usr/local/bin/verify-stages
   --verify
 ```
 This workflow:
-- Moves files from source (deletes after successful copy to both stages)
+- Moves files from source (deletes after successful copy to STAGE2)
 - Sets a remark ("Champaign Trip 2017") stored in EXIF tags
 - Verifies copied files with MD5 checksums
 - Shows progress bar during processing
-- Uses custom stage directories
+- Uses custom STAGE2 directory
 
 ### Incremental Backup
 
@@ -332,37 +297,23 @@ This workflow:
 # Copy new photos (existing files are automatically skipped)
 ./photomanagement.sh \
   --source /new/photos \
-  --organize-by-date \
   --verify \
   --log incremental.log
-```
-
-### Organize Existing Collection
-
-```bash
-# Organize already copied files by date
-cd /backup/STAGE1
-../photomanagement.sh \
-  --source . \
-  --stage1 ./organized \
-  --stage2 /backup/STAGE2/organized \
-  --organize-by-date \
-  --use-exif-date
 ```
 
 ---
 
 ## File Naming Convention
 
-The scripts work best with files named in the format:
+The script automatically renames files to the format:
 ```
 YYYYMMDD_HHMMSS.ext
-YYYYMMDD_HHMMSS_NNN.ext  (with counter)
+YYYYMMDD_HHMMSS_NNN.ext  (with counter for duplicates)
 ```
 
 Examples:
 - `20231225_143022.jpg`
-- `20231225_143022_001.jpg`
+- `20231225_143022_001.jpg` (duplicate)
 - `20240101_000000.mp4`
 
 This format is compatible with the other scripts in this repository:
@@ -372,19 +323,37 @@ This format is compatible with the other scripts in this repository:
 
 ---
 
+## Structured Log File
+
+The `--structured-log` option creates a CSV file with the following columns:
+
+```
+Source_filename,[EXIF]ModifyDate,[EXIF]DateTimeOriginal,[EXIF]CreateDate,[Composite]SubSecCreateDate,[Composite]SubSecDateTimeOriginal,STAGE2,Remark
+```
+
+Example:
+```
+IMG_1234.JPG,20231225_143022,20231225_143022,20231225_143022,,,20231225_143022.jpg,
+DSC_5678.jpg,20240115_094510,20240115_094510,20240115_094510,,,20240115_094510.jpg,Family vacation
+```
+
+This log file can be opened in spreadsheet applications (Excel, Google Sheets) for analysis.
+
+---
+
 ## Troubleshooting
 
 ### Issue: "exiftool not found"
-**Solution:** Install exiftool (see Installation section) or don't use `--use-exif-date`
+**Solution:** Install exiftool (see Installation section). exiftool is required for file renaming.
 
 ### Issue: "Neither md5sum nor md5 command found"
 **Solution:** Install coreutils package or don't use `--verify`
 
-### Issue: Files not organizing by date
+### Issue: Files not being renamed
 **Solution:** 
-- Check filename format matches YYYYMMDD_HHMMSS pattern
-- Use `--use-exif-date` if files have EXIF metadata
-- Check that exiftool is installed when using `--use-exif-date`
+- Check that exiftool is installed
+- Verify files have EXIF metadata
+- Check log file for warnings about missing EXIF dates
 
 ### Issue: Permission denied
 **Solution:** 
@@ -407,10 +376,10 @@ Log files contain detailed information about each operation:
 ```
 [2024-01-15 14:30:22] Starting photo management process
 [2024-01-15 14:30:22] Source: /media/camera/DCIM
-[2024-01-15 14:30:22] STAGE1: /backup/STAGE1
-[2024-01-15 14:30:22] STAGE2: /backup/STAGE2
-[2024-01-15 14:30:23] SUCCESS: Copied and verified '/media/camera/DCIM/IMG_1234.jpg' → '/backup/STAGE1/2024/01/20240115_143022.jpg'
-[2024-01-15 14:30:24] SKIP: Identical file exists (verified): '/backup/STAGE1/2024/01/20240115_143023.jpg'
+[2024-01-15 14:30:22] STAGE2: /backup/STAGE2 (working copy)
+[2024-01-15 14:30:23] FILENAME MAPPING: 'IMG_1234.jpg' → '20231225_143022.jpg'
+[2024-01-15 14:30:23] SUCCESS: Copied and verified 'IMG_1234.jpg' → '/backup/STAGE2/20231225_143022.jpg'
+[2024-01-15 14:30:24] SKIP: Identical file exists (verified): '/backup/STAGE2/20231225_143023.jpg'
 [2024-01-15 14:30:25] ERROR: Failed to copy '/media/camera/DCIM/corrupt.jpg'
 ```
 
@@ -419,14 +388,25 @@ Log files contain detailed information about each operation:
 ## Performance Tips
 
 1. **Use `--verify` selectively**: MD5 calculation is CPU-intensive
-2. **Use `--progress` for large batches**: Provides visual feedback
+2. **Progress bar is always shown**: Provides visual feedback automatically
 3. **Use `--quiet` for automated scripts**: Reduces output overhead
-4. **Organize by date**: Makes browsing and management easier
-5. **Regular verification**: Run `verify_stages.sh` periodically
+4. **Regular verification**: Run `verify_stages.sh` periodically (if using STAGE1)
+
+---
+
+## Modular Architecture
+
+The script uses a modular architecture with reusable modules in the `module/` directory:
+
+- `module/common.sh` - Common utilities (colors, logging, basic utilities)
+- `module/file_utils.sh` - File operations (copying, verification, extensions)
+- `module/date_utils.sh` - Date extraction and parsing
+- `module/exif_utils.sh` - EXIF operations (date extraction, timestamp modification)
+
+See `module/README.md` for detailed module documentation.
 
 ---
 
 ## License
 
 These scripts are provided as-is for personal and commercial use.
-

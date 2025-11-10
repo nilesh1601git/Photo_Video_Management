@@ -31,13 +31,21 @@ Date extraction and parsing utilities:
 ### `exif_utils.sh`
 EXIF metadata utilities:
 - EXIF tool checking (`check_exiftool`)
+- FFmpeg/FFprobe checking (`check_ffmpeg`, `check_ffprobe`)
+- Video file detection (`is_video_file`)
+- Date validation (`is_valid_date`)
 - EXIF date extraction (`get_exif_date`, `get_exif_createdate`)
+- All date tags extraction (`get_all_date_tags`) - returns pipe-separated date tags
+- CSV EXIF tags (`get_csv_exif_tags`) - returns comma-separated formatted dates
 - Date path from EXIF (`get_date_path_from_exif`)
 - EXIF timestamp modification (`modify_exif_timestamp_from_filename`)
 - Best available date (`get_best_available_date`)
 - Date-related EXIF tag display (`display_all_date_tags`)
 - Remark management (`get_exif_remark`, `set_exif_remark`, `display_exif_remark`)
 - Filename formatting from EXIF date (`format_exif_date_to_filename`)
+- Date formatting (`format_date_to_yyyymmdd_hhmmss`) - converts date strings to filename format
+- Oldest file stat date (`get_oldest_file_stat_date`) - gets oldest date from file stats
+- EXIF date tag checking (`has_exif_date_tags`, `has_valid_exif_date_tags`)
 
 ### `load_modules.sh`
 Convenience script to load all modules at once.

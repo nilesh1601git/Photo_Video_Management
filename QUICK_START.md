@@ -2,62 +2,50 @@
 
 ## 💡 Key Concept
 
-- **STAGE1**: Flat backup with original filenames (pristine backup - no organization)
-- **STAGE2**: Working copy with optional date organization (for browsing and operations)
+- **STAGE2**: Working copy with files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
+- **Flat Structure**: All files stored in a single directory (no subdirectories)
+- **Automatic Renaming**: Files are automatically renamed based on EXIF CreateDate
 
 ## 🚀 Quick Commands
 
-### Basic Copy (No Organization)
+### Basic Copy
 ```bash
-# Preview what will be copied
-./photomanagement.sh --dry-run
-
-# Copy all photos to STAGE1 (flat) and STAGE2 (flat)
-./photomanagement.sh
-```
-
-### Copy with Date Organization (STAGE2 only)
-```bash
-# STAGE1: flat backup, STAGE2: organized by filename date (YYYYMMDD_HHMMSS format)
-./photomanagement.sh --organize-by-date
-
-# STAGE1: flat backup, STAGE2: organized by EXIF date (requires exiftool)
-./photomanagement.sh --organize-by-date --use-exif-date
+# Copy all photos to STAGE2 (files renamed automatically)
+./photomanagement.sh --source /path/to/photos
 ```
 
 ### Copy with Verification
 ```bash
 # Copy and verify with MD5 checksums
-./photomanagement.sh --verify
+./photomanagement.sh --verify --source /path/to/photos
 
-# Full featured: organize + verify + log
-./photomanagement.sh --organize-by-date --use-exif-date --verify --log backup.log
+# Full featured: verify + log + progress
+./photomanagement.sh --verify --log backup.log --progress --source /path/to/photos
 ```
 
 ### Copy from Specific Source
 ```bash
 # Copy from camera/SD card
-./photomanagement.sh --source /media/camera/DCIM --organize-by-date --verify
+./photomanagement.sh --source /media/camera/DCIM --verify
 
-# Copy to custom destinations
+# Copy to custom destination
 ./photomanagement.sh \
   --source /path/to/photos \
-  --stage1 /backup/STAGE1 \
   --stage2 /external/STAGE2 \
-  --organize-by-date
+  --verify
 ```
 
 ### Copy Specific Files
 ```bash
 # Only JPG files
-./photomanagement.sh "*.JPG"
+./photomanagement.sh --source /path/to/photos "*.JPG"
 
-# Specific date
-./photomanagement.sh "20231225_*.jpg"
+# Specific date pattern
+./photomanagement.sh --source /path/to/photos "20231225_*.jpg"
 
 # Multiple patterns (run separately)
-./photomanagement.sh "*.JPG"
-./photomanagement.sh "*.MP4"
+./photomanagement.sh --source /path/to/photos "*.JPG"
+./photomanagement.sh --source /path/to/photos "*.MP4"
 ```
 
 ### Remark Management
@@ -82,11 +70,10 @@
 ./photomanagement.sh --move --source /path/to/photos
 
 # Move with other options
-./photomanagement.sh --move --organize-by-date --verify
+./photomanagement.sh --move --verify --source /path/to/photos
 
 # Complete workflow: move with remark, verification, and progress
 ./photomanagement.sh \
-  --stage1 TEST_DATA/STAGE1 \
   --stage2 TEST_DATA/STAGE2 \
   --source TEST_DATA/ \
   --progress \
@@ -95,39 +82,42 @@
   --verify
 ```
 
-### Verify Stages
+### Display Date Information
 ```bash
-# Verify STAGE1 and STAGE2 are identical
-./verify_stages.sh
+# Display date-related EXIF information only (no copying)
+./photomanagement.sh --show-dates --source /path/to/photos
+./photomanagement.sh --show-dates --source /path/to/photos "*.jpg"
+```
 
-# Verify with logging
-./verify_stages.sh --log verify.log
+### Structured Logging
+```bash
+# Create CSV log with filename mappings and date tags
+./photomanagement.sh \
+  --source /path/to/photos \
+  --structured-log mapping.csv \
+  --verify
 ```
 
 ## 📋 Common Workflows
 
 ### Workflow 1: Import from Camera
 ```bash
-# 1. Preview
-./photomanagement.sh --dry-run --source /media/camera/DCIM --organize-by-date --use-exif-date
-
-# 2. Import with verification
+# 1. Import with verification
 ./photomanagement.sh \
   --source /media/camera/DCIM \
-  --organize-by-date \
-  --use-exif-date \
   --verify \
   --log import_$(date +%Y%m%d).log \
-  --progress
+  --progress \
+  --structured-log mapping_$(date +%Y%m%d).csv
 
-# 3. Verify both stages
+# 2. Verify (if using verify_stages.sh)
 ./verify_stages.sh --log verify_$(date +%Y%m%d).log
 ```
 
 ### Workflow 2: Organize Existing Photos
 ```bash
 # Organize photos already in current directory
-./photomanagement.sh --organize-by-date --use-exif-date --verify
+./photomanagement.sh --source . --verify
 ```
 
 ### Workflow 3: Incremental Backup
@@ -135,7 +125,6 @@
 # Add new photos (existing files automatically skipped)
 ./photomanagement.sh \
   --source /new/photos \
-  --organize-by-date \
   --log incremental.log
 ```
 
@@ -143,60 +132,47 @@
 
 | What You Want | Command |
 |---------------|---------|
-| Simple copy | `./photomanagement.sh` |
-| Preview only | `./photomanagement.sh --dry-run` |
-| Organize by date | `./photomanagement.sh --organize-by-date` |
-| Use EXIF dates | `./photomanagement.sh --organize-by-date --use-exif-date` |
-| Verify copies | `./photomanagement.sh --verify` |
-| Show progress | `./photomanagement.sh --progress` |
-| Save log | `./photomanagement.sh --log backup.log` |
+| Simple copy | `./photomanagement.sh --source /path` |
+| Copy with verification | `./photomanagement.sh --verify --source /path` |
+| Show progress | `./photomanagement.sh --progress --source /path` (always enabled) |
+| Save log | `./photomanagement.sh --log backup.log --source /path` |
+| Structured CSV log | `./photomanagement.sh --structured-log mapping.csv --source /path` |
 | Set remark | `./photomanagement.sh --set-remark "Text" --source /path` |
 | Get remarks | `./photomanagement.sh --get-remark --source /path` |
 | Move files | `./photomanagement.sh --move --source /path` |
-| Everything! | `./photomanagement.sh --organize-by-date --use-exif-date --verify --log backup.log --progress` |
+| Show dates only | `./photomanagement.sh --show-dates --source /path` |
+| Everything! | `./photomanagement.sh --verify --log backup.log --progress --structured-log mapping.csv --source /path` |
 
 ## 📁 Directory Structure
 
-### Without `--organize-by-date` (STAGE1 flat, STAGE2 flat with renamed files):
+### STAGE2 (Flat Structure with Renamed Files):
 ```
-STAGE1/                          STAGE2/
-├── IMG_0013.JPG                 ├── 20231125_143022.jpg
-├── IMG_0018.JPG                 ├── 20231125_143023.jpg
-└── video.MOV                     └── 20240101_000000.mp4
+STAGE2/
+├── 20231225_143022.jpg
+├── 20231225_143023.jpg
+├── 20240101_000000.mp4
+└── 20240115_090000.jpg
 ```
-Note: STAGE2 files are renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
 
-### With `--organize-by-date` (STAGE1 flat, STAGE2 organized with renamed files):
-```
-STAGE1/                          STAGE2/
-├── IMG_0013.JPG                 ├── 2023/
-├── IMG_0018.JPG                 │   └── 12/
-└── video.MOV                     │       ├── 20231225_143022.jpg
-                                 │       └── 20231225_143023.jpg
-                                 └── 2024/
-                                     └── 01/
-                                         └── 20240101_000000.mp4
-```
-Note: STAGE1 preserves original filenames, STAGE2 files are renamed and organized by date
+Note: Files are automatically renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate
 
 ## ⚙️ Options Reference
 
 | Option | What It Does |
 |--------|--------------|
-| `--dry-run` | Preview without copying |
 | `--source <dir>` | Where to copy from |
-| `--stage1 <dir>` | STAGE1 = flat backup location |
-| `--stage2 <dir>` | STAGE2 = organized copy location |
-| `--organize-by-date` | Create YYYY/MM folders in STAGE2 only |
-| `--use-exif-date` | Get date from photo metadata for STAGE2 |
-| `--verify` | Check STAGE2 files with MD5 |
+| `--stage2 <dir>` | STAGE2 = destination location (default: ./STAGE2) |
+| `--verify` | Check copied files with MD5 |
 | `--log <file>` | Save detailed log |
-| `--progress` | Show progress bar |
+| `--structured-log <file>` | Save CSV log with filename mappings and date tags |
+| `--progress` | Show progress bar (always enabled) |
 | `--quiet` | Less output |
 | `--set-remark <text>` | Set comment/remark for files (stored in EXIF) |
 | `--get-remark` | Display remarks/comments for files |
 | `--show-remark` | Show remarks when processing files |
+| `--show-dates` | Display date-related EXIF information only (no copying) |
 | `--move` | Move files (delete source after successful copy) |
+| `--limit <number>` | Limit the number of files to process (useful for testing) |
 
 ## 🔧 Requirements
 
@@ -206,7 +182,7 @@ Note: STAGE1 preserves original filenames, STAGE2 files are renamed and organize
 **For `--verify`:**
 - md5sum (Linux) or md5 (macOS)
 
-**For `--use-exif-date`:**
+**For file renaming (required):**
 ```bash
 # Ubuntu/Debian
 sudo apt-get install libimage-exiftool-perl
@@ -215,33 +191,43 @@ sudo apt-get install libimage-exiftool-perl
 brew install exiftool
 ```
 
+**For video file support (optional, improves video date extraction):**
+```bash
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# macOS
+brew install ffmpeg
+```
+
 ## 💡 Tips
 
-1. **Always test with `--dry-run` first!**
-2. **STAGE1 is your safety net** - always kept flat with original filenames
-3. **STAGE2 is for working** - files are renamed to YYYYMMDD_HHMMSS.ext format and can be organized by date
-4. Use `--verify` for important backups (checks STAGE2)
-5. Use `--log` to track what was copied
-6. Run `verify_stages.sh` after large copies to ensure both stages match
-7. Existing files are automatically skipped by checksum (no duplicates)
-8. **Move mode safety**: Source files are only deleted if successfully copied to both stages (not if skipped)
-9. Use `--set-remark` to add notes/comments to photos (visible in PhotoPrism and other tools)
-10. Use `--get-remark` to view all remarks without processing files
+1. **STAGE2 is your working copy** - files are renamed to YYYYMMDD_HHMMSS.ext format
+2. Use `--verify` for important backups
+3. Use `--log` to track what was copied
+4. Use `--structured-log` to create CSV files for analysis
+5. Existing files are automatically skipped by checksum (no duplicates)
+6. **Move mode safety**: Source files are only deleted if successfully copied to STAGE2 (not if skipped)
+7. Use `--set-remark` to add notes/comments to photos (visible in PhotoPrism and other tools)
+8. Use `--get-remark` to view all remarks without processing files
+9. Use `--show-dates` to inspect EXIF date information before copying
+10. Progress bar is always shown automatically
 
 ## 🆘 Troubleshooting
 
 **"exiftool not found"**
-→ Install exiftool or remove `--use-exif-date`
+→ Install exiftool (required for file renaming)
 
 **"Permission denied"**
 → Run: `chmod +x photomanagement.sh verify_stages.sh`
 
-**Files not organizing by date**
-→ Check filename format: YYYYMMDD_HHMMSS.ext
-→ Or use `--use-exif-date` if photos have metadata
+**Files not being renamed**
+→ Check that exiftool is installed
+→ Verify files have EXIF metadata
+→ Check log file for warnings
 
 **Slow copying**
-→ Remove `--verify` for faster copies (verify later with verify_stages.sh)
+→ Remove `--verify` for faster copies
 
 ## 📞 Getting Help
 
@@ -251,4 +237,3 @@ brew install exiftool
 ```
 
 See `PHOTOMANAGEMENT_README.md` for complete documentation.
-
