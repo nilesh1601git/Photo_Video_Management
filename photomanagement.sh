@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # photomanagement.sh
-# Copies photos/videos to STAGE1 (flat backup) and STAGE2 (organized) directories
-# STAGE1: Pristine backup with original filenames (no organization)
-# STAGE2: Organized by date with optional EXIF handling
-# Usage: ./photomanagement.sh [--dry-run] [--source <dir>] [--stage1 <dir>] [--stage2 <dir>] [pattern]
-# Example: ./photomanagement.sh --dry-run --source ./photos --stage1 ./STAGE1 --stage2 ./STAGE2 "*.jpg"
+# Copies photos/videos to STAGE2 (organized) directory
+# STAGE2: Organized by date with optional EXIF handling, files renamed to YYYYMMDD_HHMMSS.ext
+# Usage: ./photomanagement.sh [--source <dir>] [--stage2 <dir>] [pattern]
+# Example: ./photomanagement.sh --source ./photos --stage2 ./STAGE2 "*.jpg"
 
 set -e  # Exit on error
 
@@ -21,9 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 source "$SCRIPT_DIR/module/load_modules.sh"
 
 # Default values
-DRY_RUN=false
 SOURCE_DIR="."
-STAGE1_DIR=""  # Optional - only used if --stage1 is provided
 STAGE2_DIR="./STAGE2"
 PATTERN="*"
 VERBOSE=true
@@ -46,16 +43,13 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS] [PATTERN]
 
-Copy photos/videos to STAGE1 (flat backup) and STAGE2 (organized) directories.
+Copy photos/videos to STAGE2 (organized) directory.
 
-STAGE1: Pristine backup with original filenames (no organization, no renaming)
 STAGE2: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate,
         with optional date-based directory organization and verification
 
 OPTIONS:
-    --dry-run              Show what would be copied without actually copying
     --source <dir>         Source directory (default: current directory)
-    --stage1 <dir>         STAGE1 destination - flat backup (optional, not used if omitted)
     --stage2 <dir>         STAGE2 destination - organized (default: ./STAGE2)
     --organize-by-date     Organize STAGE2 files into YYYY/MM subdirectories
     --use-exif-date        Use EXIF date for STAGE2 organization (requires exiftool)
@@ -68,7 +62,7 @@ OPTIONS:
     --get-remark           Display remark/comment for files
     --show-remark          Show remarks when processing files
     --show-dates           Display date-related EXIF information only (no copying)
-    --move                 Move files instead of copying (delete source after successful copy to both stages)
+    --move                 Move files instead of copying (delete source after successful copy to STAGE2)
     --limit <number>       Limit the number of files to process (useful for testing)
     -h, --help             Show this help message
 
@@ -77,20 +71,14 @@ PATTERN:
     Examples: "*.jpg", "*.JPG", "20231225_*.jpg"
 
 EXAMPLES:
-    # Dry run - see what would be copied
-    $0 --dry-run
-
     # Basic: Copy to STAGE2 only (flat)
     $0 --source /path/to/photos
 
-    # Copy to STAGE1 (flat) and STAGE2 (flat)
-    $0 --source /path/to/photos --stage1 ./STAGE1
+    # Organize STAGE2 by date from filename
+    $0 --organize-by-date "*.JPG"
 
-    # Copy to STAGE1 (flat) and organize STAGE2 by date from filename
-    $0 --organize-by-date "*.JPG" --stage1 ./STAGE1
-
-    # Copy to STAGE1 (flat) and organize STAGE2 by EXIF date with verification
-    $0 --organize-by-date --use-exif-date --verify --stage1 ./STAGE1
+    # Organize STAGE2 by EXIF date with verification
+    $0 --organize-by-date --use-exif-date --verify
 
     # Full featured backup with logging
     $0 --organize-by-date --use-exif-date --verify --log backup.log --progress
@@ -123,12 +111,11 @@ EXAMPLES:
     $0 --show-dates --source /path/to/photos "*.jpg"
 
 WORKFLOW:
-    1. Files are copied to STAGE1 maintaining original filenames (pristine backup) - OPTIONAL
-    2. Files are copied to STAGE2 and renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate
-    3. STAGE2 files can be organized into YYYY/MM subdirectories (optional)
-    4. Filename mappings (original → new) are logged
-    5. Both stages preserve original timestamps
-    6. STAGE1 = backup (optional), STAGE2 = working/organized copy with standardized names
+    1. Files are copied to STAGE2 and renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate
+    2. STAGE2 files can be organized into YYYY/MM subdirectories (optional)
+    3. Filename mappings (original → new) are logged
+    4. Original timestamps are preserved
+    5. STAGE2 = working/organized copy with standardized names
 
 EOF
 }
@@ -136,16 +123,8 @@ EOF
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
         --source)
             SOURCE_DIR="$2"
-            shift 2
-            ;;
-        --stage1)
-            STAGE1_DIR="$2"
             shift 2
             ;;
         --stage2)
@@ -378,96 +357,17 @@ fi
 
 # Initialize structured log file (CSV format)
 if [[ -n "$STRUCTURED_LOG_FILE" ]]; then
-    if [[ "$DRY_RUN" == false ]]; then
-        # Write CSV header to structured log file
-        echo "Source_filename,[EXIF]ModifyDate,[EXIF]DateTimeOriginal,[EXIF]CreateDate,[Composite]SubSecCreateDate,[Composite]SubSecDateTimeOriginal,STAGE1,STAGE2,Remark" > "$STRUCTURED_LOG_FILE"
-        print_success "Structured log file: $STRUCTURED_LOG_FILE"
-    else
-        print_info "Would create structured log file: $STRUCTURED_LOG_FILE"
-    fi
+    # Write CSV header to structured log file
+    echo "Source_filename,[EXIF]ModifyDate,[EXIF]DateTimeOriginal,[EXIF]CreateDate,[Composite]SubSecCreateDate,[Composite]SubSecDateTimeOriginal,STAGE2,Remark" > "$STRUCTURED_LOG_FILE"
+    print_success "Structured log file: $STRUCTURED_LOG_FILE"
 fi
 
-# Create STAGE directories if they don't exist
-if [[ "$DRY_RUN" == false ]]; then
-    stage1_created=false
-    stage2_created=false
-    
-    if [[ -n "$STAGE1_DIR" ]] && [[ ! -d "$STAGE1_DIR" ]]; then
-        mkdir -p "$STAGE1_DIR"
-        stage1_created=true
-    fi
-    
-    if [[ ! -d "$STAGE2_DIR" ]]; then
-        mkdir -p "$STAGE2_DIR"
-        stage2_created=true
-    fi
-    
-    if [[ "$stage1_created" == true ]] || [[ "$stage2_created" == true ]]; then
-        created_dirs=""
-        if [[ "$stage1_created" == true ]]; then
-            created_dirs="$STAGE1_DIR"
-        fi
-        if [[ "$stage2_created" == true ]]; then
-            if [[ -n "$created_dirs" ]]; then
-                created_dirs="$created_dirs and $STAGE2_DIR"
-            else
-                created_dirs="$STAGE2_DIR"
-            fi
-        fi
-        print_success "Created directories: $created_dirs"
-        log_message "Created directories: $created_dirs"
-    fi
-else
-    print_info "DRY RUN MODE - No files will be copied"
-    would_create=""
-    if [[ -n "$STAGE1_DIR" ]]; then
-        would_create="$STAGE1_DIR"
-    fi
-    if [[ -n "$would_create" ]]; then
-        would_create="$would_create and $STAGE2_DIR"
-    else
-        would_create="$STAGE2_DIR"
-    fi
-    print_info "Would create directories: $would_create"
+# Create STAGE2 directory if it doesn't exist
+if [[ ! -d "$STAGE2_DIR" ]]; then
+    mkdir -p "$STAGE2_DIR"
+    print_success "Created directory: $STAGE2_DIR"
+    log_message "Created directory: $STAGE2_DIR"
 fi
-
-# Function to copy file to STAGE1 (flat backup, no organization)
-# Returns: 0 on success, 1 on failure, 2 on skip, 3 if STAGE1 not configured
-# Sets global variable STAGE1_DEST_PATH with destination path or "Skipped" or "Not provided"
-copy_to_stage1() {
-    local src_file="$1"
-    
-    # If STAGE1_DIR is not set, skip STAGE1 processing
-    if [[ -z "$STAGE1_DIR" ]]; then
-        STAGE1_DEST_PATH="Not provided"
-        return 3
-    fi
-    
-    local dest_file="$STAGE1_DIR/$(basename "$src_file")"
-    
-    # Display remark if requested
-    if [[ "$SHOW_REMARK" == true ]]; then
-        display_exif_remark "$src_file"
-    fi
-    
-    # Check if file already exists with matching checksum
-    if [[ -e "$dest_file" ]]; then
-        if files_same_checksum "$src_file" "$dest_file"; then
-            STAGE1_DEST_PATH="Skipped"
-            return 2
-        fi
-    fi
-    
-    # Try to copy (file doesn't exist or differs, so it should be copied)
-    if copy_file_with_verification "$src_file" "$dest_file" false "STAGE1"; then
-        # File was successfully copied (or skipped internally, but we already checked above)
-        STAGE1_DEST_PATH="$dest_file"
-        return 0
-    else
-        STAGE1_DEST_PATH=""
-        return 1
-    fi
-}
 
 # Function to copy file to STAGE2 (with optional organization and renaming)
 copy_to_stage2() {
@@ -521,17 +421,10 @@ copy_to_stage2() {
                     correct_path="$dest_base_dir/$correct_filename"
                 fi
                 
-                if [[ "$DRY_RUN" == false ]]; then
-                    mv "$existing_file" "$correct_path" 2>/dev/null
-                    if [[ $? -eq 0 ]]; then
-                        print_info "Renamed incorrectly named file: '$existing_basename' → '$correct_filename'"
-                        log_message "RENAME: Renamed incorrectly named file '$existing_basename' → '$correct_filename'"
-                        STAGE2_DEST_PATH="$correct_path"
-                        return 0
-                    fi
-                else
-                    print_info "Would rename incorrectly named file: '$existing_basename' → '$correct_filename'"
-                    log_message "DRY RUN: Would rename '$existing_basename' → '$correct_filename'"
+                mv "$existing_file" "$correct_path" 2>/dev/null
+                if [[ $? -eq 0 ]]; then
+                    print_info "Renamed incorrectly named file: '$existing_basename' → '$correct_filename'"
+                    log_message "RENAME: Renamed incorrectly named file '$existing_basename' → '$correct_filename'"
                     STAGE2_DEST_PATH="$correct_path"
                     return 0
                 fi
@@ -624,7 +517,7 @@ copy_to_stage2() {
     local final_filename="$new_filename"
     local ext="${new_filename##*.}"
     
-    # Check if file with this name already exists in destination (or would exist in dry run)
+    # Check if file with this name already exists in destination
     if [[ -e "$dest_dir/$final_filename" ]] && [[ "$dest_dir/$final_filename" != "$src_file" ]]; then
         # Initialize counter for this base name if not already done
         local counter=${stage2_filename_counters[$base_name]:-1}
@@ -632,7 +525,7 @@ copy_to_stage2() {
         # Loop until a unique name is found
         while true; do
             final_filename="${base_name}_$(printf "%03d" $counter).${ext}"
-            if [[ ! -e "$dest_dir/$final_filename" ]] || [[ "$DRY_RUN" == true ]]; then
+            if [[ ! -e "$dest_dir/$final_filename" ]]; then
                 break
             fi
             ((counter++))
@@ -668,11 +561,6 @@ copy_to_stage2() {
 print_info "Starting photo management process..."
 print_info "Source: $SOURCE_DIR"
 print_info "Pattern: $PATTERN"
-if [[ -n "$STAGE1_DIR" ]]; then
-    print_info "STAGE1: $STAGE1_DIR (flat backup - original filenames preserved)"
-else
-    print_info "STAGE1: Not configured (skipped)"
-fi
 print_info "STAGE2: $STAGE2_DIR (renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate)"
 if [[ "$ORGANIZE_BY_DATE" == true ]]; then
     print_info "STAGE2 Organization: By date (YYYY/MM)"
@@ -688,11 +576,7 @@ if [[ "$VERIFY_COPY" == true ]]; then
     print_info "Verification: Enabled for STAGE2 (MD5 checksums)"
 fi
 if [[ "$MOVE_MODE" == true ]]; then
-    if [[ -n "$STAGE1_DIR" ]]; then
-        print_info "Mode: MOVE (source files will be deleted after successful copy to both stages)"
-    else
-        print_info "Mode: MOVE (source files will be deleted after successful copy to STAGE2)"
-    fi
+    print_info "Mode: MOVE (source files will be deleted after successful copy to STAGE2)"
 else
     print_info "Mode: COPY (source files will be preserved)"
 fi
@@ -701,11 +585,6 @@ echo ""
 log_message "Starting photo management process"
 log_message "Source: $SOURCE_DIR"
 log_message "Pattern: $PATTERN"
-if [[ -n "$STAGE1_DIR" ]]; then
-    log_message "STAGE1: $STAGE1_DIR (flat backup)"
-else
-    log_message "STAGE1: Not configured (skipped)"
-fi
 log_message "STAGE2: $STAGE2_DIR (working copy)"
 log_message "Organize by date: $ORGANIZE_BY_DATE"
 log_message "Use EXIF date: $USE_EXIF_DATE"
@@ -907,41 +786,12 @@ for file in "${files_to_process[@]}"; do
 
     # Set remark if requested (before copying so it's preserved in both stages)
     if [[ -n "$SET_REMARK" ]]; then
-        set_exif_remark "$file" "$SET_REMARK" "$DRY_RUN"
+        set_exif_remark "$file" "$SET_REMARK" false
     fi
 
-    # Copy to STAGE1 (flat backup) - only if STAGE1_DIR is configured
-    stage1_success=false
-    stage2_success=false
-    STAGE1_DEST_PATH=""
-    STAGE2_DEST_PATH=""
-
-    if [[ -n "$STAGE1_DIR" ]]; then
-        copy_to_stage1 "$file"
-        stage1_result=$?
-        
-        if [[ $stage1_result -eq 0 ]]; then
-            stage1_success=true
-        elif [[ $stage1_result -eq 2 ]]; then
-            # Skipped in STAGE1 (already exists)
-            stage1_success=false
-            ((skipped_files++))
-        elif [[ $stage1_result -eq 3 ]]; then
-            # STAGE1 not configured - this shouldn't happen if we check above, but handle it
-            stage1_success=false
-        else
-            # Failed to copy to STAGE1
-            stage1_success=false
-            ((failed_files++))
-            log_message "ERROR: Failed to copy to STAGE1: '$file'"
-        fi
-    else
-        # STAGE1 not configured - mark as not provided
-        STAGE1_DEST_PATH="Not provided"
-        stage1_result=3
-    fi
-    
     # Copy to STAGE2 (with optional organization)
+    stage2_success=false
+    STAGE2_DEST_PATH=""
     copy_to_stage2 "$file"
     stage2_result=$?
     
@@ -953,31 +803,19 @@ for file in "${files_to_process[@]}"; do
             ((verified_files++))
         fi
         
-        # Move mode: delete source file after successful copy to STAGE2 (and STAGE1 if configured)
+        # Move mode: delete source file after successful copy to STAGE2
         if [[ "$MOVE_MODE" == true ]]; then
-            # Only delete source if STAGE2 succeeded and (STAGE1 succeeded or STAGE1 not configured)
+            # Only delete source if STAGE2 succeeded
             should_delete=false
-            if [[ -n "$STAGE1_DIR" ]]; then
-                # STAGE1 is configured - require both stages to succeed
-                if [[ $stage1_result -eq 0 ]] && [[ $stage2_result -eq 0 ]]; then
-                    should_delete=true
-                fi
-            else
-                # STAGE1 not configured - only require STAGE2 to succeed
-                if [[ $stage2_result -eq 0 ]]; then
-                    should_delete=true
-                fi
+            if [[ $stage2_result -eq 0 ]]; then
+                should_delete=true
             fi
             
             if [[ "$should_delete" == true ]]; then
-                if [[ "$DRY_RUN" == true ]]; then
-                    print_info "Would move (delete source): '$file'"
-                    log_message "DRY RUN: Would move (delete source) '$file'"
+                if rm -f "$file"; then
+                    print_success "Moved (deleted source): '$file'"
+                    log_message "MOVED: Deleted source file '$file' after successful copy"
                 else
-                    if rm -f "$file"; then
-                        print_success "Moved (deleted source): '$file'"
-                        log_message "MOVED: Deleted source file '$file' after successful copy"
-                    else
                         print_error "Failed to delete source file: '$file'"
                         log_message "ERROR: Failed to delete source file '$file'"
                         ((failed_files++))
@@ -1001,7 +839,7 @@ for file in "${files_to_process[@]}"; do
     fi
     
     # Write CSV log entry if structured log is enabled
-    if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
+    if [[ -n "$STRUCTURED_LOG_FILE" ]]; then
         # Get all CSV EXIF tags
         csv_tags=$(get_csv_exif_tags "$file")
         
@@ -1009,24 +847,14 @@ for file in "${files_to_process[@]}"; do
         remark=$(get_exif_remark "$file")
         [[ -z "$remark" ]] && remark=""
         
-        # Set STAGE1 path (use "Not provided" if STAGE1_DIR not configured, "Skipped" if skipped, or path if copied)
-        if [[ -z "$STAGE1_DIR" ]]; then
-            stage1_path="Not provided"
-        else
-            stage1_path="${STAGE1_DEST_PATH:-Skipped}"
-            if [[ -z "$stage1_path" ]]; then
-                stage1_path="Skipped"
-            fi
-        fi
-        
         # Set STAGE2 path (use "Skipped" if not set or empty)
         stage2_path="${STAGE2_DEST_PATH:-Skipped}"
         if [[ -z "$stage2_path" ]]; then
             stage2_path="Skipped"
         fi
         
-        # Write CSV line: Source_filename,EXIF_tags,STAGE1,STAGE2,Remark
-        echo "${file},${csv_tags},${stage1_path},${stage2_path},${remark}" >> "$STRUCTURED_LOG_FILE"
+        # Write CSV line: Source_filename,EXIF_tags,STAGE2,Remark
+        echo "${file},${csv_tags},${stage2_path},${remark}" >> "$STRUCTURED_LOG_FILE"
     fi
 done
 
@@ -1069,15 +897,10 @@ log_message "Skipped: $skipped_files"
 log_message "Failed: $failed_files"
 log_message "========================================="
 
-if [[ "$DRY_RUN" == true ]]; then
-    print_info "This was a DRY RUN - no files were actually copied"
-    log_message "DRY RUN - no files were actually copied"
-fi
-
 close_log_file
 
 # Close structured log file
-if [[ -n "$STRUCTURED_LOG_FILE" ]] && [[ "$DRY_RUN" == false ]]; then
+if [[ -n "$STRUCTURED_LOG_FILE" ]]; then
     print_success "Structured log file saved to: $STRUCTURED_LOG_FILE"
     print_info "Structured log contains: Source File Name | Date Tags | Final File Name"
 fi
