@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # photomanagement.sh
-# Copies photos/videos to STAGE2 (organized) directory
-# STAGE2: Organized by date with optional EXIF handling, files renamed to YYYYMMDD_HHMMSS.ext
+# Copies photos/videos to STAGE2 directory
+# STAGE2: Files renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate, stored in flat structure
 # Usage: ./photomanagement.sh [--source <dir>] [--stage2 <dir>] [pattern]
 # Example: ./photomanagement.sh --source ./photos --stage2 ./STAGE2 "*.jpg"
 
@@ -24,8 +24,6 @@ SOURCE_DIR="."
 STAGE2_DIR="./STAGE2"
 PATTERN="*"
 VERBOSE=true
-ORGANIZE_BY_DATE=false
-USE_EXIF_DATE=false
 VERIFY_COPY=false
 SHOW_PROGRESS=false
 SET_REMARK=""
@@ -43,16 +41,14 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS] [PATTERN]
 
-Copy photos/videos to STAGE2 (organized) directory.
+Copy photos/videos to STAGE2 directory.
 
 STAGE2: Files renamed to YYYYMMDD_HHMMSS.ext format based on EXIF CreateDate,
-        with optional date-based directory organization and verification
+        stored in flat structure with optional verification
 
 OPTIONS:
     --source <dir>         Source directory (default: current directory)
-    --stage2 <dir>         STAGE2 destination - organized (default: ./STAGE2)
-    --organize-by-date     Organize STAGE2 files into YYYY/MM subdirectories
-    --use-exif-date        Use EXIF date for STAGE2 organization (requires exiftool)
+    --stage2 <dir>         STAGE2 destination (default: ./STAGE2)
     --verify               Verify copied files using MD5 checksums
     --log <file>           Write detailed log to specified file
     --structured-log <file> Write structured log with filename mappings and date tags
@@ -74,17 +70,11 @@ EXAMPLES:
     # Basic: Copy to STAGE2 only (flat)
     $0 --source /path/to/photos
 
-    # Organize STAGE2 by date from filename
-    $0 --organize-by-date "*.JPG"
-
-    # Organize STAGE2 by EXIF date with verification
-    $0 --organize-by-date --use-exif-date --verify
+    # Copy with verification
+    $0 --verify --source /path/to/photos
 
     # Full featured backup with logging
-    $0 --organize-by-date --use-exif-date --verify --log backup.log --progress
-
-    # Copy specific date pattern
-    $0 --organize-by-date "20231225_*.jpg"
+    $0 --verify --log backup.log --progress --source /path/to/photos
 
     # Set remark for all files
     $0 --set-remark "Family vacation 2024" --source /path/to/photos
@@ -112,10 +102,10 @@ EXAMPLES:
 
 WORKFLOW:
     1. Files are copied to STAGE2 and renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate
-    2. STAGE2 files can be organized into YYYY/MM subdirectories (optional)
+    2. All files are stored in a flat structure in STAGE2
     3. Filename mappings (original → new) are logged
     4. Original timestamps are preserved
-    5. STAGE2 = working/organized copy with standardized names
+    5. STAGE2 = working copy with standardized names
 
 EOF
 }
@@ -130,14 +120,6 @@ while [[ $# -gt 0 ]]; do
         --stage2)
             STAGE2_DIR="$2"
             shift 2
-            ;;
-        --organize-by-date)
-            ORGANIZE_BY_DATE=true
-            shift
-            ;;
-        --use-exif-date)
-            USE_EXIF_DATE=true
-            shift
             ;;
         --verify)
             VERIFY_COPY=true
@@ -369,12 +351,11 @@ if [[ ! -d "$STAGE2_DIR" ]]; then
     log_message "Created directory: $STAGE2_DIR"
 fi
 
-# Function to copy file to STAGE2 (with optional organization and renaming)
+# Function to copy file to STAGE2 (with renaming)
 copy_to_stage2() {
     local src_file="$1"
     local dest_base_dir="$STAGE2_DIR"
     local dest_dir="$dest_base_dir"
-    local subdir=""
     local original_filename=$(basename "$src_file")
     local new_filename=""
     local ext="${original_filename##*.}"
@@ -486,31 +467,6 @@ copy_to_stage2() {
         fi
     fi
 
-    # Determine subdirectory if organizing by date
-    if [[ "$ORGANIZE_BY_DATE" == true ]]; then
-        # Try to get date from EXIF if requested
-        if [[ "$USE_EXIF_DATE" == true ]]; then
-            subdir=$(get_date_path_from_exif "$src_file")
-            if [[ $? -ne 0 ]]; then
-                print_warning "Could not parse EXIF date for '$src_file', trying filename"
-                log_message "WARNING: Could not parse EXIF date for '$src_file'"
-                subdir=""
-            fi
-        fi
-
-        # Fall back to filename date if EXIF didn't work
-        if [[ -z "$subdir" ]]; then
-            subdir=$(get_date_path_from_filename "$src_file")
-            if [[ $? -ne 0 ]]; then
-                print_warning "No date found for '$src_file', copying to root directory"
-                log_message "WARNING: No date found for '$src_file'"
-            fi
-        fi
-
-        if [[ -n "$subdir" ]]; then
-            dest_dir="$dest_base_dir/$subdir"
-        fi
-    fi
 
     # Handle duplicate filenames by adding counter suffix
     local base_name="${new_filename%.*}"
@@ -562,16 +518,6 @@ print_info "Starting photo management process..."
 print_info "Source: $SOURCE_DIR"
 print_info "Pattern: $PATTERN"
 print_info "STAGE2: $STAGE2_DIR (renamed to YYYYMMDD_HHMMSS.ext based on EXIF CreateDate)"
-if [[ "$ORGANIZE_BY_DATE" == true ]]; then
-    print_info "STAGE2 Organization: By date (YYYY/MM)"
-    if [[ "$USE_EXIF_DATE" == true ]]; then
-        print_info "Date source: EXIF metadata (with filename fallback)"
-    else
-        print_info "Date source: Filename"
-    fi
-else
-    print_info "STAGE2 Organization: Flat structure"
-fi
 if [[ "$VERIFY_COPY" == true ]]; then
     print_info "Verification: Enabled for STAGE2 (MD5 checksums)"
 fi
@@ -586,8 +532,6 @@ log_message "Starting photo management process"
 log_message "Source: $SOURCE_DIR"
 log_message "Pattern: $PATTERN"
 log_message "STAGE2: $STAGE2_DIR (working copy)"
-log_message "Organize by date: $ORGANIZE_BY_DATE"
-log_message "Use EXIF date: $USE_EXIF_DATE"
 log_message "Verify copy: $VERIFY_COPY"
 log_message "Move mode: $MOVE_MODE"
 
