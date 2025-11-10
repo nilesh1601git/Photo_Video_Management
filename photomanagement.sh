@@ -54,7 +54,7 @@ OPTIONS:
     --structured-log <file> Write structured log with filename mappings and date tags
     --progress             Show progress bar during copy operations
     --quiet                Suppress verbose output
-    --set-remark <text>    Set remark/comment for files (stored in EXIF ImageDescription and UserComment)
+    --set-remark <text>    Set remark/comment on STAGE2 files only (stored in EXIF ImageDescription and UserComment)
     --get-remark           Display remark/comment for files
     --show-remark          Show remarks when processing files
     --show-dates           Display date-related EXIF information only (no copying)
@@ -76,7 +76,7 @@ EXAMPLES:
     # Full featured backup with logging
     $0 --verify --log backup.log --progress --source /path/to/photos
 
-    # Set remark for all files
+    # Set remark on STAGE2 files only
     $0 --set-remark "Family vacation 2024" --source /path/to/photos
 
     # Display remarks for all files
@@ -105,7 +105,8 @@ WORKFLOW:
     2. All files are stored in a flat structure in STAGE2
     3. Filename mappings (original → new) are logged
     4. Original timestamps are preserved
-    5. STAGE2 = working copy with standardized names
+    5. Remarks are set only on STAGE2 files (not on source files)
+    6. STAGE2 = working copy with standardized names
 
 EOF
 }
@@ -728,11 +729,6 @@ for file in "${files_to_process[@]}"; do
         printf "\r\033[KProgress: [%s] %3d%% (%d/%d) - %s" "$bar" $progress $current_file $file_count "$filename"
     fi
 
-    # Set remark if requested (before copying so it's preserved in both stages)
-    if [[ -n "$SET_REMARK" ]]; then
-        set_exif_remark "$file" "$SET_REMARK" false
-    fi
-
     # Copy to STAGE2 (with optional organization)
     stage2_success=false
     STAGE2_DEST_PATH=""
@@ -745,6 +741,11 @@ for file in "${files_to_process[@]}"; do
         ((copied_files++))
         if [[ "$VERIFY_COPY" == true ]]; then
             ((verified_files++))
+        fi
+        
+        # Set remark on STAGE2 file if requested (only on copied files, not source)
+        if [[ -n "$SET_REMARK" ]] && [[ -n "$STAGE2_DEST_PATH" ]]; then
+            set_exif_remark "$STAGE2_DEST_PATH" "$SET_REMARK" false
         fi
         
         # Move mode: delete source file after successful copy to STAGE2
