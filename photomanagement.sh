@@ -58,6 +58,7 @@ OPTIONS:
     --get-remark           Display remark/comment for files
     --show-remark          Show remarks when processing files
     --show-dates           Display date-related EXIF information only (no copying)
+    --use-exif-date        No-op for compatibility; STAGE2 naming already uses EXIF CreateDate when present
     --move                 Move files instead of copying (delete source after successful copy to STAGE2)
     --limit <number>       Limit the number of files to process (useful for testing)
     -h, --help             Show this help message
@@ -158,6 +159,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_DATES=true
             shift
             ;;
+        --use-exif-date)
+            # Documented in readme; default STAGE2 behavior already uses EXIF dates for renaming.
+            shift
+            ;;
         --move)
             MOVE_MODE=true
             shift
@@ -176,6 +181,11 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
+            if [[ "$1" == --* ]]; then
+                print_error "Unknown option: $1"
+                print_info "Run with --help for usage."
+                exit 1
+            fi
             # For get-remark and show-dates modes, only set PATTERN from the first non-option argument
             # When glob expands (e.g., TEST_DATA/*), multiple args are passed but we only need the first
             if [[ "$GET_REMARK" == true ]] || [[ "$SHOW_DATES" == true ]]; then
@@ -761,10 +771,9 @@ for file in "${files_to_process[@]}"; do
                     print_success "Moved (deleted source): '$file'"
                     log_message "MOVED: Deleted source file '$file' after successful copy"
                 else
-                        print_error "Failed to delete source file: '$file'"
-                        log_message "ERROR: Failed to delete source file '$file'"
-                        ((failed_files++))
-                    fi
+                    print_error "Failed to delete source file: '$file'"
+                    log_message "ERROR: Failed to delete source file '$file'"
+                    ((failed_files++))
                 fi
             fi
         fi
